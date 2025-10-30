@@ -16,24 +16,30 @@ jobs:
       - name: Deploy frontend via SSH
         uses: appleboy/ssh-action@v1.1.0
         with:
-          host: ${{ secrets.VPS_HOST }}
-          username: root
-          key: ${{ secrets.VPS_SSH_KEY }}
-          script: |
-            set -e
+            host: ${{ secrets.VPS_HOST }}
+            username: root
+            key: ${{ secrets.VPS_SSH_KEY }}
+            script: |
+              set -e
 
-            echo "[1] Actualizando repo frontend en el VPS..."
-            cd /var/app/frontend
-            git pull origin main
+              echo "[0] Preparando entorno Node..."
+              # IMPORTANTE: exportar el PATH donde vive node/npm/pm2 en tu VPS
+              export PATH=/root/.nvm/versions/node/v24.11.0/bin:$PATH
 
-            echo "[2] Instalando dependencias..."
-            npm install
+              echo "[1] Actualizando repo frontend en el VPS..."
+              cd /var/app/frontend
+              git pull origin main
 
-            echo "[3] Construyendo build de producción..."
-            npm run build
+              echo "[2] Instalando dependencias..."
+              npm install
 
-            echo "[4] Validando nginx y recargando..."
-            nginx -t
-            systemctl reload nginx
+              echo "[3] Construyendo build de producción..."
+              npm run build
 
-            echo "[OK] Frontend actualizado y desplegado."
+              echo "[4] Revisando config de nginx..."
+              nginx -t
+
+              echo "[5] Recargando nginx..."
+              systemctl reload nginx
+
+              echo "[OK] Frontend actualizado y desplegado."
