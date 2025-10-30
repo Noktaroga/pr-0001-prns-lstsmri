@@ -93,14 +93,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, query, setQuery
           )}
         </button>
 
-        <nav className="flex items-center gap-2">
-          <button className="rounded-md border border-neutral-300 px-3 py-2 text-sm font-medium hover:bg-neutral-100 dark:border-neutral-700 dark:hover:bg-neutral-800">
-            Sign in
-          </button>
-          <button className="rounded-md bg-neutral-900 px-3 py-2 text-sm font-medium text-white shadow hover:opacity-90 dark:bg-white dark:text-neutral-900">
-            Upload
-          </button>
-        </nav>
+        {/* Removed Sign in and Upload buttons */}
       </div>
     </header>
   );
