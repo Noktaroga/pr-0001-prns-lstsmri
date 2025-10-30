@@ -1,17 +1,25 @@
-
-import React from 'react';
-import { categories } from '../constants';
+import React from "react";
+import { Category } from "../types";
 
 interface CategoryFilterProps {
   activeCat: string;
   setActiveCat: (category: string) => void;
+  categories: Category[]; // ahora las recibe como prop
 }
 
-export const CategoryFilter: React.FC<CategoryFilterProps> = ({ activeCat, setActiveCat }) => {
+export const CategoryFilter: React.FC<CategoryFilterProps> = ({
+  activeCat,
+  setActiveCat,
+  categories,
+}) => {
   return (
     <div className="sticky top-16 z-30 w-full border-b border-neutral-200/60 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:border-neutral-800 dark:bg-neutral-900/60">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center gap-3 py-2" role="tablist" aria-label="Categories">
+        <div
+          className="flex items-center gap-3 py-2 overflow-x-auto no-scrollbar"
+          role="tablist"
+          aria-label="Categories"
+        >
           {categories.map((c) => (
             <button
               key={c.value}
