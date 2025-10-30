@@ -7,8 +7,8 @@ import { AdSlot } from "./components/AdSlot";
 import { CategoryFilter } from "./components/CategoryFilter";
 import { Pagination } from "./components/Pagination";
 import { Home } from "./components/Home";
-import { demoVideos } from "./constants";
-import { Video } from "./types";
+import { fetchVideosAndCategories } from "./constants";
+import { Video, Category } from "./types";
 import { VideoDetail } from "./components/VideoDetail";
 import { Basket } from "./components/Basket";
 
@@ -22,6 +22,19 @@ const PAGE_SIZE = 9;
 type DurationFilter = 'all' | 'tiny' | 'short' | 'long';
 
 export default function App() {
+  // ---------------------------
+  // State global de datos
+  // ---------------------------
+  const [videos, setVideos] = useState<Video[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  // loading / error para el fetch
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  // ---------------------------
+  // State UI / filtros
+  // ---------------------------
   const [query, setQuery] = useState("");
   const [activeCat, setActiveCat] = useState("all");
   const [durationFilter, setDurationFilter] = useState<DurationFilter>('all');
@@ -29,13 +42,14 @@ export default function App() {
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [activeView, setActiveView] = useState<'home' | 'videos'>('home');
-  
-  // --- Basket State ---
-  // FIX: basketItems should be an array of strings to match video.id type.
+
+  // ---------------------------
+  // Basket State
+  // ---------------------------
   const [basketItems, setBasketItems] = useState<string[]>([]);
   const [isBasketOpen, setIsBasketOpen] = useState(false);
 
-  // Load basket from localStorage on initial render
+  // cargar basket desde localStorage al montar
   useEffect(() => {
     try {
       const storedBasket = localStorage.getItem('videoBasket');
@@ -47,12 +61,11 @@ export default function App() {
     }
   }, []);
 
-  // Save basket to localStorage whenever it changes
+  // persistir basket cuando cambie
   useEffect(() => {
     localStorage.setItem('videoBasket', JSON.stringify(basketItems));
   }, [basketItems]);
 
-  // FIX: videoId should be a string to match video.id type.
   const toggleBasketItem = (videoId: string) => {
     setBasketItems(prev => 
       prev.includes(videoId) 
@@ -62,20 +75,44 @@ export default function App() {
   };
 
   const toggleBasketModal = () => setIsBasketOpen(prev => !prev);
-  // --- End Basket State ---
 
+  // ---------------------------
+  // Fetch inicial a la API
+  // ---------------------------
+  useEffect(() => {
+    setLoading(true);
+    setLoadError(null);
+
+    fetchVideosAndCategories()
+      .then(({ videos, categories }) => {
+        setVideos(videos);
+        setCategories(categories);
+      })
+      .catch(err => {
+        console.error("Error cargando datos desde API:", err);
+        setLoadError("No se pudieron cargar los videos.");
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, []);
+
+  // ---------------------------
+  // Helpers de filtrado/paginación
+  // ---------------------------
   const filteredVideos = useMemo(() => {
     const getMinutes = (duration: string) => {
         const [min, sec] = duration.split(':').map(Number);
         return min + sec / 60;
     };
 
-    return demoVideos.filter((v) => {
+    return videos.filter((v) => {
       const matchesQuery = v.title.toLowerCase().includes(query.toLowerCase());
       const matchesCat = activeCat === "all" ? true : v.category === activeCat;
       
       let matchesDuration = true;
       const minutes = getMinutes(v.duration);
+
       if (durationFilter === 'tiny') {
         matchesDuration = minutes <= 3;
       } else if (durationFilter === 'short') {
@@ -86,9 +123,9 @@ export default function App() {
 
       return matchesQuery && matchesCat && matchesDuration;
     });
-  }, [query, activeCat, durationFilter]);
+  }, [videos, query, activeCat, durationFilter]);
 
-  // Reset to first page when filters change
+  // resetear página cuando cambian filtros
   useEffect(() => {
     setCurrentPage(1);
   }, [query, activeCat, durationFilter]);
@@ -100,22 +137,49 @@ export default function App() {
 
   const totalPages = Math.ceil(filteredVideos.length / PAGE_SIZE);
 
+  // ---------------------------
+  // Navegación interna
+  // ---------------------------
   const handleVideoSelect = (video: Video) => {
     setSelectedVideo(video);
-    setIsBasketOpen(false); // Close basket when a video is selected
+    setIsBasketOpen(false);
     window.scrollTo(0, 0);
   };
 
   const handleCategorySelect = (category: string) => {
     setActiveView('videos');
     setActiveCat(category);
-    setSelectedVideo(null); // Go back to the list view
+    setSelectedVideo(null);
   };
   
   const handleViewChange = (view: 'home' | 'videos') => {
     setActiveView(view);
-    setSelectedVideo(null); // CRITICAL FIX: Exit video detail view
+    setSelectedVideo(null);
   };
+
+  // ---------------------------
+  // Render
+  // ---------------------------
+
+  // Estado de carga inicial o error de la API
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
+        <p className="text-lg font-semibold">Cargando contenido…</p>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
+        <div className="text-center">
+          <p className="text-lg font-semibold mb-2">{loadError}</p>
+          <p className="text-sm opacity-75">Intenta recargar la página.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100 font-sans">
@@ -133,7 +197,7 @@ export default function App() {
         <VideoDetail 
           video={selectedVideo} 
           onBack={() => setSelectedVideo(null)} 
-          allVideos={demoVideos}
+          allVideos={videos}
           onVideoSelect={handleVideoSelect}
           basketItems={basketItems}
           onToggleBasketItem={toggleBasketItem}
@@ -143,16 +207,22 @@ export default function App() {
         <>
           {activeView === 'home' && (
             <Home 
-              videos={demoVideos} 
+              videos={videos} 
               onVideoSelect={handleVideoSelect} 
               basketItems={basketItems}
               onToggleBasketItem={toggleBasketItem}
               onCategorySelect={handleCategorySelect}
             />
           )}
+
           {activeView === 'videos' && (
             <>
-              <CategoryFilter activeCat={activeCat} setActiveCat={setActiveCat} />
+              <CategoryFilter 
+                activeCat={activeCat} 
+                setActiveCat={setActiveCat}
+                categories={categories}        // <--- pasamos categorías dinámicas
+              />
+
               <main className="mx-auto grid max-w-7xl grid-cols-1 gap-6 px-4 py-6 sm:px-6 lg:grid-cols-12 lg:px-8">
                 <aside
                   className={`lg:col-span-3 transition-transform duration-300 ease-in-out ${
@@ -165,6 +235,7 @@ export default function App() {
                       onCategorySelect={handleCategorySelect} 
                       activeDurationFilter={durationFilter}
                       onDurationFilterChange={setDurationFilter}
+                      categories={categories}     // <--- también aquí
                     />
                     <div className="mt-6">
                       <AdSlot title="Ad Slot – 300x250" description="Vertical ad space" />
@@ -213,14 +284,15 @@ export default function App() {
                   </div>
                 </section>
               </main>
-               <button
-                  onClick={() => setShowSidebar((s) => !s)}
-                  className="fixed bottom-6 right-6 inline-flex items-center gap-2 rounded-full border border-neutral-300 bg-white px-4 py-2 text-sm shadow-lg hover:bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-900 dark:hover:bg-neutral-800 lg:hidden"
-                  aria-label="Toggle filters"
-                >
-                  <FilterIcon />
-                  Filters
-                </button>
+
+              <button
+                onClick={() => setShowSidebar((s) => !s)}
+                className="fixed bottom-6 right-6 inline-flex items-center gap-2 rounded-full border border-neutral-300 bg-white px-4 py-2 text-sm shadow-lg hover:bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-900 dark:hover:bg-neutral-800 lg:hidden"
+                aria-label="Toggle filters"
+              >
+                <FilterIcon />
+                Filters
+              </button>
             </>
           )}
         </>
@@ -232,7 +304,7 @@ export default function App() {
         isOpen={isBasketOpen}
         onClose={toggleBasketModal}
         basketItems={basketItems}
-        allVideos={demoVideos}
+        allVideos={videos}
         onToggleBasketItem={toggleBasketItem}
         onVideoSelect={handleVideoSelect}
       />
