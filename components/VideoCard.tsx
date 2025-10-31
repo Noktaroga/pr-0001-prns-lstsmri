@@ -197,6 +197,12 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick, isInBasket
   };
   
   const mainThumbnail = video.thumbnail;
+  // Filtro estricto: no mostrar si contiene 'w3', 'placeholder', 'default', o está vacío/null
+  const isValidThumbnail = mainThumbnail &&
+    !mainThumbnail.toLowerCase().includes('w3') &&
+    !mainThumbnail.toLowerCase().includes('placeholder') &&
+    !mainThumbnail.toLowerCase().includes('default') &&
+    mainThumbnail.trim() !== '';
   const currentImage = (isHovering && previewFrames.length > 0) ? previewFrames[currentPreviewIndex] : mainThumbnail;
 
   return (
@@ -221,7 +227,9 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick, isInBasket
 
       <button onClick={onClick} className="block w-full text-left">
         <div className="relative h-40 w-full bg-gradient-to-br from-neutral-200 to-neutral-300 dark:from-neutral-800 dark:to-neutral-700">
-          <img src={currentImage} alt={title} className="h-full w-full object-cover transition-opacity duration-200" />
+          {isValidThumbnail && (
+            <img src={currentImage} alt={title} className="h-full w-full object-cover transition-opacity duration-200" />
+          )}
           <span className="absolute bottom-2 right-2 rounded bg-black/70 px-1.5 py-0.5 text-xs text-white">{duration}</span>
         </div>
         <div className="space-y-2 p-3">

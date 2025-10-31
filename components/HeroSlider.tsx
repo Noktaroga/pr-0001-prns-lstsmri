@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DICTIONARY_ES from '../dictionaries/dictionary-es';
 import { Video } from '../types';
 
@@ -46,24 +46,43 @@ const BasketCheckIcon = () => (
 
 
 export const HeroSlider: React.FC<HeroSliderProps> = ({ videos, onVideoSelect, basketItems, onToggleBasketItem, onCategorySelect }) => {
+    // Filtro estricto de thumbnails válidos
+    const isValidThumbnail = (thumb?: string) => {
+        return !!thumb &&
+            !thumb.toLowerCase().includes('w3') &&
+            !thumb.toLowerCase().includes('placeholder') &&
+            !thumb.toLowerCase().includes('default') &&
+            thumb.trim() !== '';
+    };
+
+    // Filtrar videos con thumbnail válido
+    const filteredVideos = videos.filter(v => isValidThumbnail(v.thumbnail));
+
     const [currentIndex, setCurrentIndex] = useState(0);
+
+    // Ajustar el índice si cambia la lista de videos filtrados
+    useEffect(() => {
+        if (currentIndex >= filteredVideos.length) {
+            setCurrentIndex(0);
+        }
+    }, [filteredVideos.length]);
 
     const goToPrevious = () => {
         const isFirstSlide = currentIndex === 0;
-        const newIndex = isFirstSlide ? videos.length - 1 : currentIndex - 1;
+        const newIndex = isFirstSlide ? filteredVideos.length - 1 : currentIndex - 1;
         setCurrentIndex(newIndex);
     };
 
     const goToNext = () => {
-        const isLastSlide = currentIndex === videos.length - 1;
+        const isLastSlide = currentIndex === filteredVideos.length - 1;
         const newIndex = isLastSlide ? 0 : currentIndex + 1;
         setCurrentIndex(newIndex);
     };
     
-    const activeVideo = videos[currentIndex];
+    const activeVideo = filteredVideos[currentIndex];
     const isVideoInBasket = activeVideo && basketItems.includes(activeVideo.id);
 
-    if (!videos || videos.length === 0) {
+    if (!filteredVideos || filteredVideos.length === 0) {
         return null;
     }
 
@@ -99,7 +118,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ videos, onVideoSelect, b
             {/* Right Panel: Image Carousel */}
             <div className="w-3/5 h-full relative">
                 <div className="w-full h-full">
-                    {videos.map((video, index) => (
+                    {filteredVideos.map((video, index) => (
                         <div
                             key={video.id + '-' + (video.page_url || index)}
                             className="absolute w-full h-full transition-transform duration-700 ease-in-out"

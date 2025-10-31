@@ -222,6 +222,11 @@ const transformRawVideoToVideo = (rawVideo: any): Video => {
         ];
     }
 
+    // Filtro estricto: si el thumbnail es de picsum.photos, NO devolver el video (retornar null)
+    const thumb = rawVideo.thumbnail || rawVideo.preview_src || `https://picsum.photos/seed/${rawVideo.id}/400/225`;
+    if (thumb.includes('picsum.photos')) {
+        return null;
+    }
     return {
         id: rawVideo.id,
         title: rawVideo.title,
@@ -234,10 +239,7 @@ const transformRawVideoToVideo = (rawVideo: any): Video => {
         good_votes: goodVotesNum,
         bad_votes: badVotesNum,
         sources,
-        thumbnail:
-            rawVideo.thumbnail ||
-            rawVideo.preview_src ||
-            `https://picsum.photos/seed/${rawVideo.id}/400/225`,
+        thumbnail: thumb,
         page_url: rawVideo.page_url || rawVideo.pageUrl || '',
     };
 };
@@ -295,7 +297,7 @@ export const fetchVideosAndCategories = async (): Promise<{
         for (const rawVideo of videoList as any[]) {
             if (!rawVideo || !rawVideo.id) continue;
             const video = transformRawVideoToVideo(rawVideo);
-            allVideos.push(video);
+            if (video) allVideos.push(video);
         }
     }
 

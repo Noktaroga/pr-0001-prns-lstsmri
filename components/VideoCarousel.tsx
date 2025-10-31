@@ -70,7 +70,19 @@ export const VideoCarousel: React.FC<VideoCarouselProps> = ({ title, videos, onV
         }
     };
 
-    if (!videos || videos.length === 0) {
+    // Filtro estricto de thumbnails válidos
+    const isValidThumbnail = (thumb?: string) => {
+        return !!thumb &&
+            !thumb.toLowerCase().includes('w3') &&
+            !thumb.toLowerCase().includes('placeholder') &&
+            !thumb.toLowerCase().includes('default') &&
+            thumb.trim() !== '';
+    };
+
+    // Filtrar videos con thumbnail válido
+    const filteredVideos = videos.filter(v => isValidThumbnail(v.thumbnail));
+
+    if (!filteredVideos || filteredVideos.length === 0) {
         return null;
     }
 
@@ -83,7 +95,7 @@ export const VideoCarousel: React.FC<VideoCarouselProps> = ({ title, videos, onV
                     className="overflow-x-auto pb-4 scrollbar-hide"
                 >
                     <div className="flex gap-4 px-4 sm:px-6 lg:px-8">
-                        {videos.map((video, idx) => (
+                        {filteredVideos.map((video, idx) => (
                             <div key={video.id + '-' + (video.page_url || idx)} className="w-64 sm:w-72 flex-shrink-0">
                                 <VideoCard 
                                     video={video} 

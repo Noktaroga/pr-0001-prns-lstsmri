@@ -247,9 +247,18 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, allVide
     }
   };
   
+  // Filtro estricto de thumbnails válidos
+  const isValidThumbnail = (thumb?: string) => {
+    return !!thumb &&
+      !thumb.toLowerCase().includes('w3') &&
+      !thumb.toLowerCase().includes('placeholder') &&
+      !thumb.toLowerCase().includes('default') &&
+      thumb.trim() !== '';
+  };
+
   const relatedVideos = useMemo(() => {
     const filtered = allVideos.filter(
-      (v) => v.category === video.category && v.id !== video.id
+      (v) => v.category === video.category && v.id !== video.id && isValidThumbnail(v.thumbnail)
     );
     for (let i = filtered.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -305,23 +314,23 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, allVide
                 ) : videoLinks.length > 0 ? (
                   <video
                     ref={videoRef}
-                    key={videoLinks[0] || 'no-link'}
+                    key={videoLinks[videoLinks.length - 1] || 'no-link'}
                     controls
                     className="h-full w-full object-contain"
-                    poster={video.thumbnail}
+                    {...(video.thumbnail ? { poster: video.thumbnail } : {})}
                     crossOrigin="anonymous"
                     onError={e => {
-                      console.error('[VideoDetail] <video> onError', e, 'src:', videoLinks[0]);
+                      console.error('[VideoDetail] <video> onError', e, 'src:', videoLinks[videoLinks.length - 1]);
                     }}
                     onLoadedData={e => {
-                      console.debug('[VideoDetail] <video> onLoadedData', e, 'src:', videoLinks[0]);
+                      console.debug('[VideoDetail] <video> onLoadedData', e, 'src:', videoLinks[videoLinks.length - 1]);
                     }}
                     onPlay={e => {
-                      console.debug('[VideoDetail] <video> onPlay', e, 'src:', videoLinks[0]);
+                      console.debug('[VideoDetail] <video> onPlay', e, 'src:', videoLinks[videoLinks.length - 1]);
                     }}
                   >
-                    {/* Usar el primer enlace como fuente principal, puedes agregar lógica para elegir el de mayor calidad */}
-                    <source src={videoLinks[0]} type="video/mp4" />
+                    {/* Usar el último enlace como fuente principal */}
+                    <source src={videoLinks[1]} type="video/mp4" />
                     Your browser does not support the video tag.
                   </video>
                 ) : (
