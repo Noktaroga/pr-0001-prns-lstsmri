@@ -14,9 +14,21 @@ interface HomeProps {
 
 export const Home: React.FC<HomeProps> = ({ videos, onVideoSelect, basketItems, onToggleBasketItem, onCategorySelect }) => {
     
+
     const featuredVideos = videos.slice(0, 5);
-    const trendingVideos = [...videos].sort((a, b) => b.views - a.views).slice(5, 14);
-    const newReleases = videos.slice(14, 23);
+    // Most viewed: top 9 videos con más visitas, sin importar categoría
+    const mostViewedVideos = [...videos].sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 9);
+        // Recommended: más likes pero con menos visitas (top 9)
+        const recommendedVideos = [...videos]
+            .filter(v => (v.good_votes || 0) > 0 && (v.views || 0) > 0)
+            .sort((a, b) => {
+                // Primero más likes, luego menos visitas
+                if ((b.good_votes || 0) !== (a.good_votes || 0)) {
+                    return (b.good_votes || 0) - (a.good_votes || 0);
+                }
+                return (a.views || 0) - (b.views || 0);
+            })
+            .slice(0, 9);
 
     return (
         <main className="pt-6">
@@ -30,15 +42,15 @@ export const Home: React.FC<HomeProps> = ({ videos, onVideoSelect, basketItems, 
                 />
             }
             <VideoCarousel 
-                title="Trending Now" 
-                videos={trendingVideos} 
+                title="Most viewed" 
+                videos={mostViewedVideos} 
                 onVideoSelect={onVideoSelect} 
                 basketItems={basketItems}
                 onToggleBasketItem={onToggleBasketItem}
             />
             <VideoCarousel 
-                title="New Releases" 
-                videos={newReleases} 
+                title="Recommended" 
+                videos={recommendedVideos} 
                 onVideoSelect={onVideoSelect} 
                 basketItems={basketItems}
                 onToggleBasketItem={onToggleBasketItem}

@@ -1,3 +1,16 @@
+import { getValidVideoUrl } from '../utils/videoUrlHelper';
+import DICTIONARY_ES from '../dictionaries/dictionary-es';
+import DICTIONARY_ENG from '../dictionaries/dictionary-eng';
+// Formatea el número de forma escalable para valores grandes
+function formatShortCount(n: number): string {
+    if (n < 50) return "-50";
+    if (n < 1000) return `+${Math.floor(n / 50) * 50}`;
+    if (n < 10000) return `+${Math.floor(n / 100) * 100}`;
+    if (n < 100000) return `+${Math.floor(n / 500) * 500}`;
+    if (n < 1000000) return `+${Math.floor(n / 10000) * 10}K`;
+    if (n < 10000000) return `+${Math.floor(n / 100000) * 100}K`;
+    return `+${Math.floor(n / 1000000)}M`;
+}
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { Video } from '../types';
@@ -86,12 +99,13 @@ const initialComments: Comment[] = [
 ];
 
 export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, allVideos, onVideoSelect, basketItems, onToggleBasketItem, onCategorySelect }) => {
-  const { id, title, category, rating, comments, views, duration, sources } = video;
+    const { id, title, category, rating, total_votes, good_votes, bad_votes, duration, sources } = video;
   const [commentsList, setCommentsList] = useState<Comment[]>(initialComments);
   const [newComment, setNewComment] = useState("");
   const videoRef = useRef<HTMLVideoElement>(null);
   
-  const [currentQuality, setCurrentQuality] = useState(sources[0].quality);
+    const [currentQuality, setCurrentQuality] = useState(sources[0].quality);
+    const [validSourceUrl, setValidSourceUrl] = useState(sources[0].url);
   const [isQualityMenuOpen, setQualityMenuOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const isVideoInBasket = basketItems.includes(id);
@@ -204,7 +218,20 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, allVide
     return filtered.slice(0, 9);
   }, [video, allVideos]);
 
-  const currentSourceUrl = sources.find(s => s.quality === currentQuality)?.url || sources[0].url;
+    const currentSourceUrl = validSourceUrl;
+    // Efecto: valida el link y si está roto, intenta rescatarlo scrapeando la página fuente
+    useEffect(() => {
+        let isMounted = true;
+        const source = sources.find(s => s.quality === currentQuality) || sources[0];
+        async function checkAndFixUrl() {
+            // page_url debe estar en video.page_url
+            const fallbackPageUrl = video.page_url || video.pageUrl || video.url || '';
+            const validUrl = await getValidVideoUrl(fallbackPageUrl, source.url);
+            if (isMounted && validUrl) setValidSourceUrl(validUrl);
+        }
+        checkAndFixUrl();
+        return () => { isMounted = false; };
+    }, [currentQuality, sources, video.page_url, video.pageUrl, video.url]);
 
   const qualitySelectorUI = (
       <div className="relative">
@@ -270,53 +297,57 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, allVide
         </div>
 
         <div className="lg:col-span-1">
-             <button 
-                onClick={() => onCategorySelect(category)}
-                className="inline-block bg-neutral-200 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 rounded-full px-3 py-1 text-xs font-semibold mb-3 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors"
-             >
-                {category}
-             </button>
+                 <button 
+                     onClick={() => onCategorySelect(category)}
+                     className="inline-block bg-neutral-200 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 rounded-full px-3 py-1 text-xs font-semibold mb-3 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors"
+                 >
+                     {(() => {
+                        const lang = (navigator.language || '').toLowerCase().startsWith('es') ? 'es' : 'en';
+                        const DICTIONARIES = [DICTIONARY_ES, DICTIONARY_ENG];
+                        let normalizedCategory = category.startsWith('/') ? category : '/' + category;
+                        let mapped = '';
+                        for (const DICTIONARY of DICTIONARIES) {
+                          mapped = DICTIONARY[normalizedCategory]
+                             || DICTIONARY[normalizedCategory.replace(/\s+/g, '').toLowerCase()]
+                             || DICTIONARY[category]
+                             || DICTIONARY[category.replace(/\s+/g, '').toLowerCase()];
+                          if (mapped) break;
+                        }
+                        return mapped || category;
+                     })()}
+                 </button>
              <h1 className="text-2xl lg:text-3xl font-bold tracking-tight mb-4">{title}</h1>
 
              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-neutral-600 dark:text-neutral-400 mb-6 border-y border-neutral-200 dark:border-neutral-800 py-4">
-                <div className="flex items-center gap-1.5" title={`Rating: ${rating}`}>
+                <div className="flex items-center gap-2" title={`Rating: ${rating}`}> 
                     <StarRating rating={rating} />
-                    <span className="font-semibold">{rating.toFixed(1)}</span>
                 </div>
-                <div className="flex items-center gap-1.5" title={`${comments} comments`}>
-                    <CommentIcon />
-                    <span>{Intl.NumberFormat('en-US', { notation: 'compact' }).format(comments + commentsList.length)}</span>
-                </div>
-                 <div className="flex items-center gap-1.5">
-                    <span>{Intl.NumberFormat('en-US', { notation: 'compact' }).format(views)} views</span>
-                 </div>
+                                <div className="flex items-center gap-2">
+                                    <span title="Votos buenos" className="text-green-600 flex items-center gap-1">👍<span>{formatShortCount(good_votes)}</span></span>
+                                    <span title="Votos malos" className="text-red-600 flex items-center gap-1">👎<span>{formatShortCount(bad_votes)}</span></span>
+                                </div>
+                                {/* visitas eliminadas */}
              </div>
 
-             <div className="prose prose-sm dark:prose-invert text-neutral-700 dark:text-neutral-300">
-                <p>This is a placeholder description for the video. Here you can add more detailed information about the content, context, credits, and relevant links.</p>
-                <p>The video has a duration of {duration}.</p>
-             </div>
 
-             <div className="mt-6 flex gap-2">
-                <button className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white shadow hover:opacity-90 dark:bg-white dark:text-neutral-900">
-                    Like
-                </button>
-                <button className="rounded-md border border-neutral-300 px-4 py-2 text-sm font-medium hover:bg-neutral-100 dark:border-neutral-700 dark:hover:bg-neutral-800">
-                    Share
-                </button>
-                <button 
-                  onClick={() => onToggleBasketItem(id)}
-                  className={`flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium transition-colors ${
-                    isVideoInBasket 
-                      ? 'border-neutral-400 bg-neutral-100 dark:border-neutral-600 dark:bg-neutral-800' 
-                      : 'border-neutral-300 hover:bg-neutral-100 dark:border-neutral-700 dark:hover:bg-neutral-800'
-                  }`}
-                  aria-label={isVideoInBasket ? "Remove from basket" : "Add to basket"}
-                >
-                  {isVideoInBasket ? <BasketCheckIcon /> : <BasketAddIcon />}
-                  <span>{isVideoInBasket ? 'In Basket' : 'Add to Basket'}</span>
-                </button>
-             </div>
+
+                         <div className="mt-6 flex gap-2">
+                                <button className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white shadow hover:opacity-90 dark:bg-white dark:text-neutral-900">
+                                        Like
+                                </button>
+                                <button 
+                                    onClick={() => onToggleBasketItem(id)}
+                                    className={`flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium transition-colors ${
+                                        isVideoInBasket 
+                                            ? 'border-neutral-400 bg-neutral-100 dark:border-neutral-600 dark:bg-neutral-800' 
+                                            : 'border-neutral-300 hover:bg-neutral-100 dark:border-neutral-700 dark:hover:bg-neutral-800'
+                                    }`}
+                                    aria-label={isVideoInBasket ? "Remove from basket" : "Add to basket"}
+                                >
+                                    {isVideoInBasket ? <BasketCheckIcon /> : <BasketAddIcon />}
+                                    <span>{isVideoInBasket ? 'In Basket' : 'Add to Basket'}</span>
+                                </button>
+                         </div>
 
              <div className="mt-8">
                 <AdSlot title="Ad Slot – 300x250" description="Vertical ad space" />
@@ -324,40 +355,7 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, allVide
         </div>
       </div>
 
-      <div className="mt-12 border-t border-neutral-200 dark:border-neutral-800 pt-8 max-w-3xl mx-auto px-4 sm:px-0">
-        <h2 className="text-xl font-bold mb-4">Comments ({comments + commentsList.length})</h2>
-        <form onSubmit={handleCommentSubmit} className="mb-6">
-            <textarea
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                placeholder="Add a comment as Anonymous..."
-                className="w-full rounded-md border border-neutral-300 bg-white p-3 text-sm outline-none ring-0 placeholder:text-neutral-400 focus:border-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:placeholder:text-neutral-500 dark:focus:border-white"
-                rows={3}
-                aria-label="Add a comment"
-            />
-            <div className="flex justify-end mt-2">
-                <button 
-                  type="submit" 
-                  disabled={!newComment.trim()}
-                  className="shrink-0 rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white shadow hover:opacity-90 dark:bg-white dark:text-neutral-900 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                    Post Comment
-                </button>
-            </div>
-        </form>
 
-        <div className="space-y-4">
-            {commentsList.map(comment => (
-                <article key={comment.id} className="p-4 rounded-lg bg-neutral-100 dark:bg-neutral-900">
-                    <div className="flex items-center gap-2 mb-1">
-                        <div className="w-8 h-8 rounded-full bg-neutral-300 dark:bg-neutral-700 grid place-items-center font-bold text-sm">A</div>
-                        <span className="font-semibold text-sm">Anonymous</span>
-                    </div>
-                    <p className="text-sm text-neutral-800 dark:text-neutral-300 pl-10">{comment.text}</p>
-                </article>
-            ))}
-        </div>
-      </div>
       
       {relatedVideos.length > 0 && (
           <div className="mt-12 border-t border-neutral-200 dark:border-neutral-800 pt-8">

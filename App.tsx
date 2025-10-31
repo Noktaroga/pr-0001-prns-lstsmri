@@ -18,7 +18,7 @@ const FilterIcon = () => (
     </svg>
 );
 
-const PAGE_SIZE = 9;
+const PAGE_SIZE = 20;
 type DurationFilter = 'all' | 'tiny' | 'short' | 'long';
 
 export default function App() {
@@ -106,13 +106,12 @@ export default function App() {
         return min + sec / 60;
     };
 
-    return videos.filter((v) => {
+    // Filtrar primero
+    const filtered = videos.filter((v) => {
       const matchesQuery = v.title.toLowerCase().includes(query.toLowerCase());
       const matchesCat = activeCat === "all" ? true : v.category === activeCat;
-      
       let matchesDuration = true;
       const minutes = getMinutes(v.duration);
-
       if (durationFilter === 'tiny') {
         matchesDuration = minutes <= 3;
       } else if (durationFilter === 'short') {
@@ -120,8 +119,16 @@ export default function App() {
       } else if (durationFilter === 'long') {
         matchesDuration = minutes > 10;
       }
-
       return matchesQuery && matchesCat && matchesDuration;
+    });
+
+    // Ordenar por visitas + likes - dislikes, luego por rating
+    return filtered.sort((a, b) => {
+      const scoreA = (a.views || 0) + (a.good_votes || 0) - (a.bad_votes || 0);
+      const scoreB = (b.views || 0) + (b.good_votes || 0) - (b.bad_votes || 0);
+      if (scoreB !== scoreA) return scoreB - scoreA;
+      // Si empatan, más estrellas primero
+      return (b.rating || 0) - (a.rating || 0);
     });
   }, [videos, query, activeCat, durationFilter]);
 

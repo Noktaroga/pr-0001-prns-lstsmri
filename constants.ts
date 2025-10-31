@@ -1,8 +1,11 @@
-// constants.ts (nuevo enfoque dinámico vía API)
+// constants.ts
 
 import { Video, Category } from './types';
+import DICTIONARY_ES from './dictionaries/dictionary-es';
 
-// --- Helper Functions to Parse Raw Data ---
+// =====================================================
+// Helpers numéricos / formato (sin cambios relevantes)
+// =====================================================
 
 /**
  * Convierte strings tipo "8.1k" -> 8100, "279" -> 279
@@ -50,15 +53,144 @@ const formatDuration = (durationStr: string): string => {
     return '00:00';
 };
 
-// -------------------------------------------------------------------
-// Transformador de un item crudo del backend a tu tipo interno Video
-// -------------------------------------------------------------------
+// Convierte strings como "1,234,567", "1.2M", "950K" a número
+function parseViews(str: any): number {
+    if (typeof str === 'number') return str;
+    if (typeof str !== 'string') return 0;
+    const s = str.replace(/,/g, '').trim().toUpperCase();
+    if (s.endsWith('M')) return Math.round(parseFloat(s) * 1_000_000);
+    if (s.endsWith('K')) return Math.round(parseFloat(s) * 1_000);
+    return parseInt(s, 10) || 0;
+}
+
+// =====================================================
+// CATEGORÍAS FIJAS
+// =====================================================
+//
+// Ahora dejamos de inferir dinámicamente y asumimos estas categorías
+// exactas que tú pasaste. Mantenemos un label humano y el value que
+// usaremos para filtrar.
+//
+// NOTA: el "value" debe coincidir con lo que uses para identificar
+// esa categoría dentro del JSON del backend (keys) o con el campo
+// .category de cada video. Si tu backend guarda exactamente
+// "/c/Oiled-22", etc., entonces usamos exactamente eso.
+//
+
+export const CATEGORY_LABELS: Record<string, string> = {
+    "/c/Oiled-22":                 "Oiled",
+    "/c/Gapes-167":                "Gapes",
+    "/c/AI-239":                   "AI",
+    "/c/Amateur-65":               "Amateur",
+    "/c/Anal-12":                  "Anal",
+    "/c/Asian_Woman-32":           "Asian Woman",
+    "/c/ASMR-229":                 "ASMR",
+    "/c/Cam_Porn":                 "Cam Porn",
+    "/?k=caseros&top":             "Caseros",
+    "/?k=casting&top":             "Casting",
+    "/?k=chilenas&top":            "Chilenas",
+    "/c/Cuckold-237":              "Cuckold",
+    "/c/Cumshot-18":               "Cumshot",
+    "/c/Squirting-56":             "Squirting",
+    "/c/Creampie-40":              "Creampie",
+    "/c/Big_Ass-24":               "Big Ass",
+    "/?k=culonas&top":             "Culonas",
+    "/c/Femdom-235":               "Femdom",
+    "/c/Fucked_Up_Family-81":      "Fucked Up Family",
+    "/c/Fisting-165":              "Fisting",
+    "/c/Gangbang-69":              "Gangbang",
+    "/c/Interracial-27":           "Interracial",
+    "/c/Teen-13":                  "Teen",
+    "/c/Latina-16":                "Latina",
+    "/c/Lingerie-83":              "Lingerie",
+    "/c/Lesbian-26":               "Lesbian",
+    "/?k=lesbianas&top":           "Lesbianas",
+    "/?k=maduras&top":             "Maduras",
+    "/c/Mature-38":                "Mature",
+    "/?k=mamada&top":              "Mamada",
+    "/c/Blowjob-15":               "Blowjob",
+    "/c/Stockings-28":             "Stockings",
+    "/c/Milf-19":                  "Milf",
+    "/c/Brunette-25":              "Brunette",
+    "/c/Black_Woman-30":           "Black Woman",
+    "/c/Redhead-31":               "Redhead",
+    "/c/Big_Cock-34":              "Big Cock",
+    "/?k=real&top":                "Real",
+    "/c/Blonde-20":                "Blonde",
+    "/c/Solo_and_Masturbation-33": "Solo / Masturbation",
+    "/?k=sub+espanol&top":         "Sub Español",
+    "/c/Big_Tits-23":              "Big Tits",
+    "/?k=trios&top":               "Trios",
+    "/gay?fmc=1":                  "Gay",
+    "/shemale?fmc=1":              "Shemale",
+};
+
+// esta lista fija de categorías reemplaza category_names_list del scraper
+export const CATEGORY_LIST: string[] = [
+    "/c/Oiled-22",
+    "/c/Gapes-167",
+    "/c/AI-239",
+    "/c/Amateur-65",
+    "/c/Anal-12",
+    "/c/Asian_Woman-32",
+    "/c/ASMR-229",
+    "/c/Cam_Porn",
+    "/?k=caseros&top",
+    "/?k=casting&top",
+    "/?k=chilenas&top",
+    "/c/Cuckold-237",
+    "/c/Cumshot-18",
+    "/c/Squirting-56",
+    "/c/Creampie-40",
+    "/c/Big_Ass-24",
+    "/?k=culonas&top",
+    "/c/Femdom-235",
+    "/c/Fucked_Up_Family-81",
+    "/c/Fisting-165",
+    "/c/Gangbang-69",
+    "/c/Interracial-27",
+    "/c/Teen-13",
+    "/c/Latina-16",
+    "/c/Lingerie-83",
+    "/c/Lesbian-26",
+    "/?k=lesbianas&top",
+    "/?k=maduras&top",
+    "/c/Mature-38",
+    "/?k=mamada&top",
+    "/c/Blowjob-15",
+    "/c/Stockings-28",
+    "/c/Milf-19",
+    "/c/Brunette-25",
+    "/c/Black_Woman-30",
+    "/c/Redhead-31",
+    "/c/Big_Cock-34",
+    "/?k=real&top",
+    "/c/Blonde-20",
+    "/c/Solo_and_Masturbation-33",
+    "/?k=sub+espanol&top",
+    "/c/Big_Tits-23",
+    "/?k=trios&top",
+    "/gay?fmc=1",
+    "/shemale?fmc=1",
+];
+
+// =====================================================
+// Transformador de videos
+// =====================================================
 
 const transformRawVideoToVideo = (rawVideo: any): Video => {
     const totalVotesNum = parseVotesString(rawVideo.total_votes);
     const goodVotesNum = parseKString(rawVideo.good_votes);
+    const badVotesNum = parseKString(rawVideo.bad_votes);
+    const viewsNum = parseViews(
+        rawVideo.views ||
+        rawVideo.visits ||
+        rawVideo.total_views ||
+        rawVideo.totalVotes ||
+        rawVideo.total_votes
+    );
 
-    // rating en escala 1-5
+    // rating escala 1-5
     const rating = totalVotesNum > 0
         ? Math.max(1, (goodVotesNum / totalVotesNum) * 5)
         : 3.5; // default si no hay votos
@@ -70,8 +202,6 @@ const transformRawVideoToVideo = (rawVideo: any): Video => {
         rawVideo.available_qualities.length > 0 &&
         rawVideo.url
     ) {
-        // NOTA: en tu código original intentabas reemplazar "360p|480p|720p..."
-        // Eso asume que la URL contiene la calidad. Lo mantenemos igual.
         for (const q of rawVideo.available_qualities) {
             let urlForQuality = rawVideo.url;
             urlForQuality = urlForQuality.replace(
@@ -97,11 +227,12 @@ const transformRawVideoToVideo = (rawVideo: any): Video => {
         title: rawVideo.title,
         duration: formatDuration(rawVideo.duration),
         category: rawVideo.category,
-        views: totalVotesNum,
+        categoryLabel: DICTIONARY_ES[rawVideo.category] || rawVideo.category,
+        views: viewsNum,
         rating: parseFloat(rating.toFixed(1)),
-        comments:
-            Math.floor(totalVotesNum / 150) +
-            Math.floor(Math.random() * 20),
+        total_votes: totalVotesNum,
+        good_votes: goodVotesNum,
+        bad_votes: badVotesNum,
         sources,
         thumbnail:
             rawVideo.thumbnail ||
@@ -110,49 +241,34 @@ const transformRawVideoToVideo = (rawVideo: any): Video => {
     };
 };
 
-// -------------------------------------------------------------------
-// Generar categorías a partir de la lista normalizada de videos
-// -------------------------------------------------------------------
+// =====================================================
+// Categorías visibles en el frontend
+// =====================================================
+//
+// Dejamos de inferir categorías desde los videos dinámicamente.
+// Ahora devolvemos SIEMPRE el set fijo anterior + "All".
+// El label sale de CATEGORY_LABELS.
+//
 
-const buildCategoriesFromVideos = (videos: Video[]): Category[] => {
-    const categorySet = new Set<string>();
-
-    for (const v of videos) {
-        if (v.category) {
-            categorySet.add(v.category);
-        }
-    }
-
-    const generatedCategories: Category[] = Array.from(categorySet).map(
-        (value) => {
-            // "/c/Arab-159" -> "Arab"
-            const parts = value.split('/');
-            const lastPart = parts[parts.length - 1];
-            const labelRaw = lastPart.split('-')[0];
-            const label =
-                labelRaw.charAt(0).toUpperCase() + labelRaw.slice(1);
-
-            return {
-                label,
-                value,
-            };
-        }
-    );
-
-    return [
+const buildCategoriesFromFixedList = (): Category[] => {
+    const cats: Category[] = [
         { label: 'All', value: 'all' },
-        ...generatedCategories,
+        ...CATEGORY_LIST.map((catPath) => ({
+            label: CATEGORY_LABELS[catPath] || catPath,
+            value: catPath,
+        })),
     ];
+    return cats;
 };
 
-// -------------------------------------------------------------------
+// =====================================================
 // API pública para el frontend
-// -------------------------------------------------------------------
+// =====================================================
 
 /**
  * Llama al backend (/api/videos),
  * transforma todo a Video[],
- * y además calcula las categorías.
+ * y devuelve las categorías fijas.
  */
 export const fetchVideosAndCategories = async (): Promise<{
     videos: Video[];
@@ -165,28 +281,24 @@ export const fetchVideosAndCategories = async (): Promise<{
 
     const rawData = await res.json();
 
-    // rawData es un objeto donde cada key es una categoría
-    // y el value es array de videos crudos. Igual que antes.
-    // Ej:
+    // rawData se asume como:
     // {
-    //   "amateur": [ {...}, {...} ],
-    //   "latina":  [ {...}, {...} ],
-    //    ...
+    //   "/c/Oiled-22": [ {...}, {...} ],
+    //   "/c/Gapes-167": [ {...}, {...} ],
+    //   ...
     // }
 
     const allVideos: Video[] = [];
 
     for (const videoList of Object.values(rawData)) {
         for (const rawVideo of videoList as any[]) {
-            // filtramos solo los que tengan al menos id y url o thumbnail
             if (!rawVideo || !rawVideo.id) continue;
-
             const video = transformRawVideoToVideo(rawVideo);
             allVideos.push(video);
         }
     }
 
-    const categories = buildCategoriesFromVideos(allVideos);
+    const categories = buildCategoriesFromFixedList();
 
     return {
         videos: allVideos,

@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import DICTIONARY_ES from '../dictionaries/dictionary-es';
 import { Video } from '../types';
 
 interface HeroSliderProps {
@@ -71,12 +72,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ videos, onVideoSelect, b
             {/* Left Panel: Text Content */}
             <div className="w-2/5 flex flex-col justify-center items-start p-8 lg:p-12 relative z-10">
                 <div key={currentIndex} className="animate-fadeInUp">
-                    <button 
-                        onClick={() => onCategorySelect(activeVideo.category)}
-                        className="inline-block bg-neutral-200 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 rounded-full px-3 py-1 text-xs font-semibold mb-3 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors"
-                    >
-                        {activeVideo.category}
-                    </button>
+
                     <h2 className="text-3xl lg:text-4xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100 mb-6 line-clamp-3">
                         {activeVideo.title}
                     </h2>

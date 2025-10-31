@@ -45,9 +45,8 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, query, setQuery
           <MenuIcon />
         </button>
 
-        <a href="#" className="inline-flex items-center gap-2">
-          <div className="grid h-8 w-8 place-items-center rounded-md bg-gradient-to-br from-neutral-900 to-neutral-700 text-white shadow dark:from-white dark:to-neutral-200 dark:text-neutral-900">◎</div>
-          <span className="text-base font-bold tracking-tight">VideoSite</span>
+        <a href="#" className="inline-flex items-center">
+          <img src="/logo.png" alt="Logo" className="h-14 w-15 object-contain" />
         </a>
         
         <nav className="hidden items-center gap-2 lg:flex ml-4">

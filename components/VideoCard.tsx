@@ -1,5 +1,16 @@
+// Formatea el número de forma escalable para valores grandes
+function formatShortCount(n: number): string {
+  if (n < 1000) return `+${Math.floor(n / 50) * 50}`;
+  if (n < 10000) return `+${Math.floor(n / 100) * 100}`;
+  if (n < 100000) return `+${Math.floor(n / 500) * 500}`;
+  if (n < 1000000) return `+${Math.floor(n / 10000) * 10}K`;
+  if (n < 10000000) return `+${Math.floor(n / 100000) * 100}K`;
+  return `+${Math.floor(n / 1000000)}M`;
+}
 
 import React, { useState, useEffect, useRef } from 'react';
+import DICTIONARY_ES from '../dictionaries/dictionary-es';
+import DICTIONARY_ENG from '../dictionaries/dictionary-eng';
 import { Video } from '../types';
 
 // Custom hook to detect if an element is in the viewport
@@ -158,7 +169,7 @@ const StarRating: React.FC<{ rating: number }> = ({ rating }) => {
 
 
 export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick, isInBasket, onToggleBasketItem }) => {
-  const { id, title, duration, category, views, rating, comments, sources } = video;
+  const { id, title, duration, category, categoryLabel, rating, total_votes, good_votes, bad_votes, sources } = video;
   const [isHovering, setIsHovering] = useState(false);
   const [currentPreviewIndex, setCurrentPreviewIndex] = useState(0);
 
@@ -216,17 +227,34 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick, isInBasket
         <div className="space-y-2 p-3">
           <h3 className="line-clamp-2 text-sm font-semibold leading-snug group-hover:text-neutral-600 dark:group-hover:text-neutral-300">{title}</h3>
           
-          <div className="flex items-center justify-between text-xs text-neutral-600 dark:text-neutral-400">
-            <StarRating rating={rating} />
-            <div className="flex items-center gap-1.5" title={`${comments} comments`}>
-                <CommentIcon />
-                <span>{comments}</span>
+          <div className="flex flex-col gap-1 text-xs text-neutral-600 dark:text-neutral-400">
+            <div className="flex items-center gap-2">
+              <StarRating rating={rating} />
+            </div>
+            <div className="flex items-center gap-2">
+              <span title="Votos buenos" className="text-green-600 flex items-center gap-1">👍<span>{formatShortCount(good_votes)}</span></span>
+              <span title="Votos malos" className="text-red-600 flex items-center gap-1">👎<span>{formatShortCount(bad_votes)}</span></span>
             </div>
           </div>
 
-          <div className="flex items-center justify-between text-xs opacity-70 pt-2 border-t border-neutral-100 dark:border-neutral-800">
-            <span>{category}</span>
-            <span>{Intl.NumberFormat('en-US', { notation: 'compact' }).format(views)} views</span>
+          <div className="flex items-center text-xs opacity-70 pt-2 border-t border-neutral-100 dark:border-neutral-800">
+            {(() => {
+              // Selección de idioma (puedes cambiar esto según la lógica de idioma de tu app)
+              const lang = (navigator.language || '').toLowerCase().startsWith('es') ? 'es' : 'en';
+              const DICTIONARIES = [DICTIONARY_ES, DICTIONARY_ENG];
+              let normalizedCategory = category.startsWith('/') ? category : '/' + category;
+              let mapped = categoryLabel;
+              if (!mapped) {
+                for (const DICTIONARY of DICTIONARIES) {
+                  mapped = DICTIONARY[normalizedCategory]
+                    || DICTIONARY[normalizedCategory.replace(/\s+/g, '').toLowerCase()]
+                    || DICTIONARY[category]
+                    || DICTIONARY[category.replace(/\s+/g, '').toLowerCase()];
+                  if (mapped) break;
+                }
+              }
+              return mapped || category;
+            })()}
           </div>
         </div>
       </button>
