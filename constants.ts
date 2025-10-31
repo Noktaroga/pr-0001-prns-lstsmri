@@ -238,6 +238,7 @@ const transformRawVideoToVideo = (rawVideo: any): Video => {
             rawVideo.thumbnail ||
             rawVideo.preview_src ||
             `https://picsum.photos/seed/${rawVideo.id}/400/225`,
+        page_url: rawVideo.page_url || rawVideo.pageUrl || '',
     };
 };
 

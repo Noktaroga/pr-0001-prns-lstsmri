@@ -101,7 +101,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ videos, onVideoSelect, b
                 <div className="w-full h-full">
                     {videos.map((video, index) => (
                         <div
-                            key={video.id}
+                            key={video.id + '-' + (video.page_url || index)}
                             className="absolute w-full h-full transition-transform duration-700 ease-in-out"
                             style={{ transform: `translateX(${(index - currentIndex) * 100}%)` }}
                         >

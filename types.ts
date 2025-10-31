@@ -12,6 +12,7 @@ export interface Video {
   bad_votes: number;
   sources: { quality: string; url: string }[];
   thumbnail?: string;
+  page_url: string;
 }
 
 export interface Category {

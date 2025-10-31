@@ -1,4 +1,3 @@
-import { getValidVideoUrl } from '../utils/videoUrlHelper';
 import DICTIONARY_ES from '../dictionaries/dictionary-es';
 import DICTIONARY_ENG from '../dictionaries/dictionary-eng';
 // Formatea el número de forma escalable para valores grandes
@@ -99,13 +98,54 @@ const initialComments: Comment[] = [
 ];
 
 export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, allVideos, onVideoSelect, basketItems, onToggleBasketItem, onCategorySelect }) => {
-    const { id, title, category, rating, total_votes, good_votes, bad_votes, duration, sources } = video;
+  const { id, title, category, rating, total_votes, good_votes, bad_votes, duration, sources } = video;
+  // Obtener URLs de video haciendo POST a /api/selenium-scrape
+  const [videoLinks, setVideoLinks] = useState<string[]>([]);
+  const [loadingLinks, setLoadingLinks] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  useEffect(() => {
+    const fetchLinks = async () => {
+      setLoadingLinks(true);
+      setFetchError(null);
+      try {
+        // Usa video.page_url si existe, si no, usa video.url
+        const pageUrl = video.page_url || video.url;
+        if (!pageUrl) {
+          setFetchError('No page URL provided');
+          setLoadingLinks(false);
+          return;
+        }
+        const response = await fetch('/api/selenium-scrape', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ page_url: pageUrl })
+        });
+        if (!response.ok) throw new Error('Error en la petición');
+        const data = await response.json();
+        if (Array.isArray(data.video_links)) {
+          setVideoLinks(data.video_links);
+          console.log('[VideoDetail] video_links recibidos:', data.video_links);
+        } else {
+          setFetchError('Respuesta inesperada del backend');
+        }
+      } catch (err: any) {
+        setFetchError(err.message || 'Error desconocido');
+      } finally {
+        setLoadingLinks(false);
+      }
+    };
+    fetchLinks();
+  }, [video.page_url, video.url, id]);
   const [commentsList, setCommentsList] = useState<Comment[]>(initialComments);
   const [newComment, setNewComment] = useState("");
   const videoRef = useRef<HTMLVideoElement>(null);
   
     const [currentQuality, setCurrentQuality] = useState(sources[0].quality);
-    const [validSourceUrl, setValidSourceUrl] = useState(sources[0].url);
+        const [validSourceUrl, setValidSourceUrl] = useState<string | null>(null);
+        // DEBUG: Log inicial de props video
+        useEffect(() => {
+            console.debug('[VideoDetail] video prop:', video);
+        }, [video]);
   const [isQualityMenuOpen, setQualityMenuOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const isVideoInBasket = basketItems.includes(id);
@@ -218,20 +258,6 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, allVide
     return filtered.slice(0, 9);
   }, [video, allVideos]);
 
-    const currentSourceUrl = validSourceUrl;
-    // Efecto: valida el link y si está roto, intenta rescatarlo scrapeando la página fuente
-    useEffect(() => {
-        let isMounted = true;
-        const source = sources.find(s => s.quality === currentQuality) || sources[0];
-        async function checkAndFixUrl() {
-            // page_url debe estar en video.page_url
-            const fallbackPageUrl = video.page_url || video.pageUrl || video.url || '';
-            const validUrl = await getValidVideoUrl(fallbackPageUrl, source.url);
-            if (isMounted && validUrl) setValidSourceUrl(validUrl);
-        }
-        checkAndFixUrl();
-        return () => { isMounted = false; };
-    }, [currentQuality, sources, video.page_url, video.pageUrl, video.url]);
 
   const qualitySelectorUI = (
       <div className="relative">
@@ -272,26 +298,34 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, allVide
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 px-4 sm:px-0">
         <div className="lg:col-span-2">
             <div className="group relative aspect-video w-full bg-black rounded-xl overflow-hidden shadow-2xl">
-                <video 
-                  ref={videoRef}
-                  key={currentSourceUrl}
-                  controls 
-                  className="h-full w-full object-contain"
-                poster={video.thumbnail || `https://picsum.photos/seed/${video.id}/1280/720`}
-                >
-                    <source src={currentSourceUrl} type="video/mp4" />
+                {loadingLinks ? (
+                  <div className="flex items-center justify-center h-full">Cargando enlaces de video...</div>
+                ) : fetchError ? (
+                  <div className="flex items-center justify-center h-full text-red-600">{fetchError}</div>
+                ) : videoLinks.length > 0 ? (
+                  <video
+                    ref={videoRef}
+                    key={videoLinks[0] || 'no-link'}
+                    controls
+                    className="h-full w-full object-contain"
+                    poster={video.thumbnail}
+                    crossOrigin="anonymous"
+                    onError={e => {
+                      console.error('[VideoDetail] <video> onError', e, 'src:', videoLinks[0]);
+                    }}
+                    onLoadedData={e => {
+                      console.debug('[VideoDetail] <video> onLoadedData', e, 'src:', videoLinks[0]);
+                    }}
+                    onPlay={e => {
+                      console.debug('[VideoDetail] <video> onPlay', e, 'src:', videoLinks[0]);
+                    }}
+                  >
+                    {/* Usar el primer enlace como fuente principal, puedes agregar lógica para elegir el de mayor calidad */}
+                    <source src={videoLinks[0]} type="video/mp4" />
                     Your browser does not support the video tag.
-                </video>
-
-                <div className="absolute top-4 right-4 z-10 opacity-0 group-hover:opacity-100">
-                    {!isFullscreen && qualitySelectorUI}
-                </div>
-
-                {isFullscreen && createPortal(
-                    <div className="fixed top-4 right-4 z-[2147483647]">
-                        {qualitySelectorUI}
-                    </div>,
-                    document.body
+                  </video>
+                ) : (
+                  <div className="flex items-center justify-center h-full">No se encontraron enlaces de video.</div>
                 )}
             </div>
         </div>

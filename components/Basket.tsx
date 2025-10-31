@@ -73,9 +73,9 @@ export const Basket: React.FC<BasketProps> = ({ isOpen, onClose, basketItems, al
                 <div className="flex-grow overflow-y-auto p-4">
                     {paginatedVideos.length > 0 ? (
                         <div className="space-y-4">
-                            {paginatedVideos.map(video => (
+                            {paginatedVideos.map((video, idx) => (
                                 <BasketItem 
-                                    key={video.id}
+                                    key={video.id + '-' + (video.page_url || idx)}
                                     video={video}
                                     isAutoplayEnabled={isAutoplayEnabled}
                                     onRemove={onToggleBasketItem}

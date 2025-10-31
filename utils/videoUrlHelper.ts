@@ -22,18 +22,22 @@ export async function isVideoUrlValid(url) {
  */
 export async function getValidVideoUrl(fallbackPageUrl: string, originalUrl: string): Promise<string|null> {
   if (await isVideoUrlValid(originalUrl)) return originalUrl;
-  // Llama al backend para scrapear el link válido
+  // Llama al backend para scrapear el link válido (usa endpoint relativo para proxy Vite)
   try {
-    const res = await fetch('http://localhost:4000/api/scrape-video-url', {
+    console.log('[getValidVideoUrl] Llamando a /api/scrape-video-url con', fallbackPageUrl);
+    const res = await fetch('/api/scrape-video-url', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ pageUrl: fallbackPageUrl })
+      body: JSON.stringify({ page_url: fallbackPageUrl })
     });
+    console.log('[getValidVideoUrl] Respuesta status:', res.status);
     if (!res.ok) return null;
     const data = await res.json();
+    console.log('[getValidVideoUrl] Data recibida:', data);
     if (data.videoUrl && await isVideoUrlValid(data.videoUrl)) return data.videoUrl;
     return null;
-  } catch {
+  } catch (e) {
+    console.error('[getValidVideoUrl] Error en fetch:', e);
     return null;
   }
 }
