@@ -29,10 +29,22 @@ const BasketIcon = () => (
 
 
 export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, query, setQuery, activeView, onViewChange, basketItemCount, onToggleBasket }) => {
-  
+  const [lang, setLang] = React.useState<'ES' | 'EN'>('ES');
+
   const navButtonClasses = "rounded-md px-3 py-2 text-sm font-medium transition-colors";
   const activeNavButtonClasses = "bg-neutral-100 dark:bg-neutral-800";
   const inactiveNavButtonClasses = "hover:bg-neutral-100/50 dark:hover:bg-neutral-800/50";
+
+  // Ref to trigger highlight in basket
+  // Use window event to communicate with Basket
+  const handleMultiplayClick = () => {
+    // Open basket
+    onToggleBasket();
+    // Dispatch custom event to trigger highlight
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('highlight-basket-multiplayer'));
+    }, 0);
+  };
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-neutral-200/60 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:border-neutral-800 dark:bg-neutral-900/60">
@@ -62,6 +74,48 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, query, setQuery
           >
             Videos
           </button>
+          <div className="relative flex items-center">
+              <style>{`
+                @keyframes neonRedPulse {
+                  0%, 100% {
+                    box-shadow: 0 0 6px #ff2d55, 0 0 12px #ff2d55, 0 0 24px #ff2d55;
+                    color: #fff;
+                  }
+                  50% {
+                    box-shadow: 0 0 12px #ff2d55, 0 0 24px #ff2d55, 0 0 48px #ff2d55;
+                    color: #fff;
+                  }
+                }
+                .neon-multiplay-btn {
+                  background: #23272f !important;
+                  box-shadow: 0 0 8px #fff, 0 0 16px #fff, 0 0 2px #ff2d55;
+                  border: 2px solid #fff3;
+                  position: relative;
+                }
+                .neon-multiplay-badge {
+                  background: #ff2d55 !important;
+                  color: #fff !important;
+                  border: 2px solid #fff !important;
+                  box-shadow: 0 0 8px #fff, 0 0 16px #fff, 0 0 24px #ff2d55;
+                  animation: neonRedPulse 1.2s infinite alternate;
+                  text-shadow: 0 0 6px #ff2d55, 0 0 12px #ff2d55;
+                }
+              `}</style>
+              <button
+                className={navButtonClasses + ' neon-multiplay-btn ml-2 text-white hover:bg-neutral-800'}
+                style={{ position: 'relative' }}
+                type="button"
+                onClick={handleMultiplayClick}
+              >
+                Multiplay
+                <span
+                  className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 neon-multiplay-badge text-xs font-bold rounded px-2 py-0.5"
+                  style={{ whiteSpace: 'nowrap' }}
+                >
+                  New
+                </span>
+              </button>
+          </div>
         </nav>
 
         <div className="flex-grow"></div>
@@ -78,6 +132,22 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, query, setQuery
             /
           </kbd>
         </label>
+
+        {/* Language buttons */}
+        <div className="hidden sm:flex items-center gap-2 ml-2">
+          {['ES', 'EN'].map((lng) => (
+            <button
+              key={lng}
+              onClick={() => setLang(lng as 'ES' | 'EN')}
+              className={`flex items-center justify-center w-9 h-9 rounded-full border text-xs font-bold transition-colors
+                ${lang === lng ? 'bg-blue-600 text-white border-blue-600 shadow-lg' : 'bg-white text-neutral-700 border-neutral-300 hover:bg-neutral-100 dark:bg-neutral-900 dark:text-neutral-200 dark:border-neutral-700 dark:hover:bg-neutral-800'}`}
+              style={{ outline: lang === lng ? '2px solid #2563eb' : undefined }}
+              aria-pressed={lang === lng}
+            >
+              {lng}
+            </button>
+          ))}
+        </div>
 
         <button 
           onClick={onToggleBasket}

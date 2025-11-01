@@ -9,33 +9,27 @@ import { Pagination } from "./components/Pagination";
 import { Home } from "./components/Home";
 import { fetchVideosAndCategories } from "./constants";
 import { Video, Category } from "./types";
-import { VideoDetail } from "./components/VideoDetail";
 import { Basket } from "./components/Basket";
-
+// Simple FilterIcon inline for toggle filters button
 const FilterIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
-    </svg>
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+  </svg>
 );
 
-const PAGE_SIZE = 20;
-type DurationFilter = 'all' | 'tiny' | 'short' | 'long';
 
-export default function App() {
-  // ---------------------------
-  // State global de datos
-  // ---------------------------
+type DurationFilter = 'all' | 'tiny' | 'short' | 'long';
+const PAGE_SIZE = 20;
+
+import { VideoDetail } from "./components/VideoDetail";
+
+const App: React.FC = () => {
   const [videos, setVideos] = useState<Video[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-
-  // loading / error para el fetch
-  const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState('');
+  const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  // ---------------------------
-  // State UI / filtros
-  // ---------------------------
-  const [query, setQuery] = useState("");
   const [activeCat, setActiveCat] = useState("all");
   const [durationFilter, setDurationFilter] = useState<DurationFilter>('all');
   const [showSidebar, setShowSidebar] = useState(false);
@@ -48,18 +42,26 @@ export default function App() {
   // ---------------------------
   const [basketItems, setBasketItems] = useState<string[]>([]);
   const [isBasketOpen, setIsBasketOpen] = useState(false);
+  const [basketFullPopup, setBasketFullPopup] = useState(false);
 
   // cargar basket desde localStorage al montar
   useEffect(() => {
     try {
       const storedBasket = localStorage.getItem('videoBasket');
       if (storedBasket) {
-        setBasketItems(JSON.parse(storedBasket));
+        // Solo IDs que existen en videos (evita videos fantasma)
+        const parsed: string[] = JSON.parse(storedBasket);
+        setBasketItems(parsed);
       }
     } catch (error) {
       console.error("Failed to parse basket from localStorage", error);
     }
   }, []);
+
+  // Limpiar basket de IDs huérfanas cuando cambian los videos
+  useEffect(() => {
+    setBasketItems(prev => prev.filter(id => videos.some(v => v.id === id)));
+  }, [videos]);
 
   // persistir basket cuando cambie
   useEffect(() => {
@@ -67,11 +69,17 @@ export default function App() {
   }, [basketItems]);
 
   const toggleBasketItem = (videoId: string) => {
-    setBasketItems(prev => 
-      prev.includes(videoId) 
-        ? prev.filter(id => id !== videoId)
-        : [...prev, videoId]
-    );
+    setBasketItems(prev => {
+      if (prev.includes(videoId)) {
+        return prev.filter(id => id !== videoId);
+      } else {
+        if (prev.length >= 4) {
+          setBasketFullPopup(true);
+          return prev;
+        }
+        return [...prev, videoId];
+      }
+    });
   };
 
   const toggleBasketModal = () => setIsBasketOpen(prev => !prev);
@@ -189,7 +197,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100 font-sans">
+  <div className="min-h-screen bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100" style={{ fontFamily: 'Inter, Segoe UI, Arial, sans-serif' }}>
       <Header
         onToggleSidebar={() => setShowSidebar((s) => !s)}
         query={query}
@@ -199,6 +207,39 @@ export default function App() {
         basketItemCount={basketItems.length}
         onToggleBasket={toggleBasketModal}
       />
+
+      {/* Neon animated bulletin bar (alternates between red and purple) */}
+      {(activeView === 'home' || activeView === 'videos') && (
+        <>
+          <style>{`
+            @keyframes neonPulse {
+              0%, 100% {
+                text-shadow: 0 0 8px #ff2d55, 0 0 16px #ff2d55, 0 0 32px #ff2d55;
+                color: #ff2d55;
+              }
+              50% {
+                text-shadow: 0 0 8px #a259ff, 0 0 16px #a259ff, 0 0 32px #a259ff;
+                color: #a259ff;
+              }
+            }
+          `}</style>
+          <div className={`${activeView === 'videos' ? 'mb-6' : ''}`} style={{width: '100vw', position: 'relative', left: '50%', right: '50%', marginLeft: '-50vw', marginRight: '-50vw', zIndex: 50}}>
+            <div
+              className="transition-transform duration-200 ease-in-out cursor-pointer flex items-center justify-center py-3 text-center text-base font-extrabold tracking-wide select-none shadow-lg bg-black/90 neon-bulletin-glow"
+              style={{
+                width: '100%',
+                animation: 'neonPulse 1.5s infinite alternate',
+              }}
+              onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.08)'}
+              onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+            >
+              <span style={{width: '100%', textAlign: 'center', display: 'block'}}>
+                Enjoy 4x more. Try our Multiplay Effect!
+              </span>
+            </div>
+          </div>
+        </>
+      )}
 
       {selectedVideo ? (
         <VideoDetail 
@@ -212,6 +253,8 @@ export default function App() {
         />
       ) : (
         <>
+          {/* ...existing code... */}
+
           {activeView === 'home' && (
             <Home 
               videos={videos} 
@@ -224,12 +267,6 @@ export default function App() {
 
           {activeView === 'videos' && (
             <>
-              <CategoryFilter 
-                activeCat={activeCat} 
-                setActiveCat={setActiveCat}
-                categories={categories}        // <--- pasamos categorías dinámicas
-              />
-
               <main className="mx-auto grid max-w-7xl grid-cols-1 gap-6 px-4 py-6 sm:px-6 lg:grid-cols-12 lg:px-8">
                 <aside
                   className={`lg:col-span-3 transition-transform duration-300 ease-in-out ${
@@ -242,7 +279,8 @@ export default function App() {
                       onCategorySelect={handleCategorySelect} 
                       activeDurationFilter={durationFilter}
                       onDurationFilterChange={setDurationFilter}
-                      categories={categories}     // <--- también aquí
+                      categories={categories}
+                      filteredVideos={filteredVideos}
                     />
                     <div className="mt-6">
                       <AdSlot title="Ad Slot – 300x250" description="Vertical ad space" />
@@ -252,32 +290,65 @@ export default function App() {
 
                 <section className="lg:col-span-9" aria-label="Results">
                   <div className="mb-4 flex items-center justify-between gap-4">
-                    <h2 className="text-lg font-semibold">All Videos</h2>
-                    <div className="flex items-center gap-2 text-sm opacity-75">
-                      <span>{filteredVideos.length} results</span>
-                    </div>
+                    <h2 className="text-lg font-semibold">Videos por categoría</h2>
                   </div>
-
-                  {paginatedVideos.length > 0 ? (
-                    <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4" role="list">
-                      {paginatedVideos.map((v) => (
-                        <li key={v.id}>
-                          <VideoCard
-                            video={v}
-                            onClick={() => handleVideoSelect(v)}
-                            isInBasket={basketItems.includes(v.id)}
-                            onToggleBasketItem={toggleBasketItem}
-                          />
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center h-64 text-center bg-neutral-100 dark:bg-neutral-900 rounded-xl">
-                      <p className="text-lg font-medium text-neutral-600 dark:text-neutral-400">No videos found</p>
-                      <p className="text-sm text-neutral-500 dark:text-neutral-500">Try adjusting your search or filters.</p>
-                    </div>
-                  )}
-
+                  {activeCat === 'all'
+                    ? categories
+                        .filter(cat => cat.value !== 'all')
+                        .map(cat => {
+                          // Use strict category value match
+                          const catVideos = filteredVideos.filter(v => (v.category || '').toLowerCase() === (cat.value || '').toLowerCase());
+                          if (catVideos.length === 0) return null;
+                          return (
+                            <div key={cat.value} className="mb-10">
+                              <h3 className="text-lg font-bold mb-3 px-2 text-blue-700 dark:text-blue-300">{cat.label}</h3>
+                              <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4" role="list">
+                                {catVideos.map((v) => (
+                                  <li key={v.id}>
+                                    <VideoCard
+                                      video={v}
+                                      onClick={() => handleVideoSelect(v)}
+                                      isInBasket={basketItems.includes(v.id)}
+                                      onToggleBasketItem={toggleBasketItem}
+                                    />
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          );
+                        })
+                    : (() => {
+                        const cat = categories.find(c => c.value === activeCat);
+                        if (!cat) return null;
+                        // Use strict category value match
+                        const catVideos = filteredVideos.filter(v => (v.category || '').toLowerCase() === (cat.value || '').toLowerCase());
+                        if (catVideos.length === 0) {
+                          return (
+                            <div className="flex flex-col items-center justify-center h-64 text-center bg-neutral-100 dark:bg-neutral-900 rounded-xl">
+                              <p className="text-lg font-medium text-neutral-600 dark:text-neutral-400">No videos found</p>
+                              <p className="text-sm text-neutral-500 dark:text-neutral-500">Try adjusting your search or filters.</p>
+                            </div>
+                          );
+                        }
+                        return (
+                          <div key={cat.value} className="mb-10">
+                            <h3 className="text-lg font-bold mb-3 px-2 text-blue-700 dark:text-blue-300">{cat.label}</h3>
+                            <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4" role="list">
+                              {catVideos.map((v) => (
+                                <li key={v.id}>
+                                  <VideoCard
+                                    video={v}
+                                    onClick={() => handleVideoSelect(v)}
+                                    isInBasket={basketItems.includes(v.id)}
+                                    onToggleBasketItem={toggleBasketItem}
+                                  />
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        );
+                      })()
+                  }
                   <div className="mt-6">
                     <Pagination 
                         currentPage={currentPage}
@@ -285,13 +356,11 @@ export default function App() {
                         onPageChange={setCurrentPage}
                     />
                   </div>
-
                   <div className="mt-8">
                     <AdSlot title="Ad Slot – 728x90" description="Horizontal ad space" />
                   </div>
                 </section>
               </main>
-
               <button
                 onClick={() => setShowSidebar((s) => !s)}
                 className="fixed bottom-6 right-6 inline-flex items-center gap-2 rounded-full border border-neutral-300 bg-white px-4 py-2 text-sm shadow-lg hover:bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-900 dark:hover:bg-neutral-800 lg:hidden"
@@ -314,7 +383,59 @@ export default function App() {
         allVideos={videos}
         onToggleBasketItem={toggleBasketItem}
         onVideoSelect={handleVideoSelect}
+        onClearBasket={() => setBasketItems([])}
       />
+      {basketFullPopup && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            background: 'rgba(0,0,0,0.5)',
+            zIndex: 20000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+          onClick={() => setBasketFullPopup(false)}
+        >
+          <div
+            style={{
+              background: 'white',
+              color: 'black',
+              borderRadius: 12,
+              padding: '32px 40px',
+              fontSize: 20,
+              fontWeight: 'bold',
+              boxShadow: '0 4px 32px 0 rgba(0,0,0,0.2)',
+              minWidth: 320,
+              textAlign: 'center',
+            }}
+          >
+            El basket ya está lleno (máx. 4 videos)
+            <br />
+            <button
+              style={{
+                marginTop: 24,
+                background: '#222',
+                color: 'white',
+                border: 'none',
+                borderRadius: 8,
+                padding: '8px 24px',
+                fontSize: 18,
+                cursor: 'pointer',
+              }}
+              onClick={() => setBasketFullPopup(false)}
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
+export default App;
