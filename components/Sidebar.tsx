@@ -18,6 +18,7 @@ const durationFilters: { label: string; value: DurationFilter }[] = [
   { label: "Long (> 10 min)", value: "long" },
 ];
 
+
 export const Sidebar: React.FC<SidebarProps> = ({
   onCategorySelect,
   activeDurationFilter,
@@ -30,10 +31,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const activeFilterClasses = "bg-neutral-200 dark:bg-neutral-800 font-semibold";
   const inactiveFilterClasses = "hover:bg-neutral-100 dark:hover:bg-neutral-800/50";
 
-  // Only show categories with videos
-  const categoriesWithVideos = categories.filter(
-    (c) => c.value !== 'all' && filteredVideos.some(v => v.category === c.value)
-  );
+  // Mostrar siempre todas las categorías (menos 'all')
+  const categoriesWithVideos = categories.filter((c) => c.value !== 'all');
 
   return (
     <div className="flex flex-col gap-4">

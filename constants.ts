@@ -277,34 +277,16 @@ export const fetchVideosAndCategories = async (): Promise<{
     videos: Video[];
     categories: Category[];
 }> => {
-    const res = await fetch('/api/videos');
+    // Solo obtener la primera página (por ejemplo, 100 videos)
+    const res = await fetch('/api/videos?page=1&size=100');
     if (!res.ok) {
         throw new Error('No se pudo obtener /api/videos');
     }
-
-    const rawData = await res.json();
-
-    // rawData se asume como:
-    // {
-    //   "/c/Oiled-22": [ {...}, {...} ],
-    //   "/c/Gapes-167": [ {...}, {...} ],
-    //   ...
-    // }
-
-    const allVideos: Video[] = [];
-
-    for (const videoList of Object.values(rawData)) {
-        for (const rawVideo of videoList as any[]) {
-            if (!rawVideo || !rawVideo.id) continue;
-            const video = transformRawVideoToVideo(rawVideo);
-            if (video) allVideos.push(video);
-        }
-    }
-
+    const data = await res.json();
+    const videos: Video[] = (data.videos || []).map(transformRawVideoToVideo).filter(Boolean);
     const categories = buildCategoriesFromFixedList();
-
     return {
-        videos: allVideos,
+        videos,
         categories,
     };
 };

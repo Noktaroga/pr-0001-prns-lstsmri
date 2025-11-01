@@ -83,11 +83,9 @@ const StarRating: React.FC<{ rating: number }> = ({ rating }) => {
 interface VideoDetailProps {
   video: Video;
   onBack: () => void;
-  allVideos: Video[];
+  relatedVideos: Video[];
   onVideoSelect: (video: Video) => void;
-  // FIX: basketItems should be an array of strings to match video.id type.
   basketItems: string[];
-  // FIX: videoId should be a string to match video.id type.
   onToggleBasketItem: (videoId: string) => void;
   onCategorySelect: (category: string) => void;
 }
@@ -97,8 +95,10 @@ const initialComments: Comment[] = [
     { id: 2, text: "I learned a lot from this tutorial." },
 ];
 
-export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, allVideos, onVideoSelect, basketItems, onToggleBasketItem, onCategorySelect }) => {
-  const { id, title, category, rating, total_votes, good_votes, bad_votes, duration, sources } = video;
+export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, relatedVideos, onVideoSelect, basketItems, onToggleBasketItem, onCategorySelect }) => {
+  // Asegura que sources siempre sea un array
+  const { id, title, category, rating, total_votes, good_votes, bad_votes, duration } = video;
+  const sources = Array.isArray(video.sources) && video.sources.length > 0 ? video.sources : [{ quality: 'default', url: '' }];
   // Obtener URLs de video haciendo POST a /api/selenium-scrape
   const [videoLinks, setVideoLinks] = useState<string[]>([]);
   const [loadingLinks, setLoadingLinks] = useState(false);
@@ -140,7 +140,7 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, allVide
   const [newComment, setNewComment] = useState("");
   const videoRef = useRef<HTMLVideoElement>(null);
   
-    const [currentQuality, setCurrentQuality] = useState(sources[0].quality);
+  const [currentQuality, setCurrentQuality] = useState(sources[0]?.quality || 'default');
         const [validSourceUrl, setValidSourceUrl] = useState<string | null>(null);
         // DEBUG: Log inicial de props video
         useEffect(() => {
@@ -256,16 +256,14 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, allVide
       thumb.trim() !== '';
   };
 
-  const relatedVideos = useMemo(() => {
-    const filtered = allVideos.filter(
-      (v) => v.category === video.category && v.id !== video.id && isValidThumbnail(v.thumbnail)
-    );
+  const validRelated = useMemo(() => {
+    const filtered = relatedVideos.filter(v => v.id !== video.id && isValidThumbnail(v.thumbnail));
     for (let i = filtered.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [filtered[i], filtered[j]] = [filtered[j], filtered[i]];
     }
     return filtered.slice(0, 9);
-  }, [video, allVideos]);
+  }, [video, relatedVideos]);
 
 
   const qualitySelectorUI = (
@@ -400,17 +398,17 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, allVide
 
 
       
-      {relatedVideos.length > 0 && (
-          <div className="mt-12 border-t border-neutral-200 dark:border-neutral-800 pt-8">
-              <VideoCarousel 
-                  title="Related Videos"
-                  videos={relatedVideos}
-                  onVideoSelect={onVideoSelect}
-                  basketItems={basketItems}
-                  onToggleBasketItem={onToggleBasketItem}
-              />
-          </div>
-      )}
+    {validRelated.length > 0 && (
+      <div className="mt-12 border-t border-neutral-200 dark:border-neutral-800 pt-8">
+        <VideoCarousel 
+          title="Related Videos"
+          videos={validRelated}
+          onVideoSelect={onVideoSelect}
+          basketItems={basketItems}
+          onToggleBasketItem={onToggleBasketItem}
+        />
+      </div>
+    )}
 
       <div className="mt-12 px-4 sm:px-0">
         <AdSlot title="Ad Slot – 728x90" description="Horizontal ad space" />

@@ -34,7 +34,12 @@ const App: React.FC = () => {
   const [durationFilter, setDurationFilter] = useState<DurationFilter>('all');
   const [showSidebar, setShowSidebar] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
+  const [relatedVideos, setRelatedVideos] = useState<Video[]>([]);
+  // Paginación solo para la vista 'videos'
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(PAGE_SIZE);
+  const [totalVideos, setTotalVideos] = useState(0);
+  const [videosPage, setVideosPage] = useState<Video[]>([]);
   const [activeView, setActiveView] = useState<'home' | 'videos'>('home');
 
   // ---------------------------
@@ -87,10 +92,10 @@ const App: React.FC = () => {
   // ---------------------------
   // Fetch inicial a la API
   // ---------------------------
+  // Cargar todos los videos y categorías para Home
   useEffect(() => {
     setLoading(true);
     setLoadError(null);
-
     fetchVideosAndCategories()
       .then(({ videos, categories }) => {
         setVideos(videos);
@@ -104,6 +109,31 @@ const App: React.FC = () => {
         setLoading(false);
       });
   }, []);
+
+  // Fetch paginado SOLO para la vista 'videos'
+  useEffect(() => {
+    if (activeView !== 'videos') return;
+    setLoading(true);
+    setLoadError(null);
+    let url = `/api/videos?page=${currentPage}&size=${pageSize}`;
+    if (activeCat && activeCat !== 'all') {
+      url += `&category=${encodeURIComponent(activeCat)}`;
+    }
+    fetch(url)
+      .then(async (res) => {
+        if (!res.ok) throw new Error('No se pudo obtener /api/videos');
+        const data = await res.json();
+        setVideosPage(data.videos);
+        setTotalVideos(data.total);
+      })
+      .catch((err) => {
+        console.error("Error cargando datos desde API:", err);
+        setLoadError("No se pudieron cargar los videos.");
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [activeView, currentPage, pageSize, activeCat]);
 
   // ---------------------------
   // Helpers de filtrado/paginación
@@ -145,31 +175,77 @@ const App: React.FC = () => {
     setCurrentPage(1);
   }, [query, activeCat, durationFilter]);
 
-  const paginatedVideos = useMemo(() => {
-    const startIndex = (currentPage - 1) * PAGE_SIZE;
-    return filteredVideos.slice(startIndex, startIndex + PAGE_SIZE);
-  }, [filteredVideos, currentPage]);
-
-  const totalPages = Math.ceil(filteredVideos.length / PAGE_SIZE);
+  // Solo para la vista 'videos', el paginado viene del backend
+  const totalPages = activeView === 'videos' ? Math.ceil(totalVideos / pageSize) : 1;
 
   // ---------------------------
   // Navegación interna
   // ---------------------------
+  // Handle video selection and update URL
   const handleVideoSelect = (video: Video) => {
     setSelectedVideo(video);
     setIsBasketOpen(false);
     window.scrollTo(0, 0);
+    // Push video ID to URL
+    window.history.pushState({ videoId: video.id }, '', `?video=${video.id}`);
+    // Fetch related videos for this category
+    fetch(`/api/videos?page=1&size=12&category=${encodeURIComponent(video.category)}`)
+      .then(res => res.ok ? res.json() : Promise.reject('No se pudo obtener /api/videos'))
+      .then(data => {
+        const rel = (data.videos || []).filter((v: any) => v.id !== video.id);
+        setRelatedVideos(rel);
+      })
+      .catch(() => setRelatedVideos([]));
   };
+
+  // Handle browser navigation (back/forward)
+  useEffect(() => {
+    const onPopState = (event: PopStateEvent) => {
+      const params = new URLSearchParams(window.location.search);
+      const videoId = params.get('video');
+      if (videoId) {
+        const found = videos.find(v => v.id === videoId);
+        if (found) {
+          setSelectedVideo(found);
+        } else {
+          setSelectedVideo(null);
+        }
+      } else {
+        setSelectedVideo(null);
+      }
+    };
+    window.addEventListener('popstate', onPopState);
+    // On mount, check if URL has video param
+    const params = new URLSearchParams(window.location.search);
+    const videoId = params.get('video');
+    if (videoId) {
+      const found = videos.find(v => v.id === videoId);
+      if (found) setSelectedVideo(found);
+    }
+    return () => window.removeEventListener('popstate', onPopState);
+  }, [videos]);
 
   const handleCategorySelect = (category: string) => {
     setActiveView('videos');
     setActiveCat(category);
     setSelectedVideo(null);
+    // Remove video param from URL
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('video')) {
+      params.delete('video');
+      window.history.replaceState({}, '', `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`);
+    }
   };
   
   const handleViewChange = (view: 'home' | 'videos') => {
     setActiveView(view);
     setSelectedVideo(null);
+    // Remove video param from URL
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('video')) {
+      params.delete('video');
+      window.history.replaceState({}, '', `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`);
+    }
   };
 
   // ---------------------------
@@ -244,8 +320,16 @@ const App: React.FC = () => {
       {selectedVideo ? (
         <VideoDetail 
           video={selectedVideo} 
-          onBack={() => setSelectedVideo(null)} 
-          allVideos={videos}
+          onBack={() => {
+            setSelectedVideo(null);
+            // Remove video param from URL
+            const params = new URLSearchParams(window.location.search);
+            if (params.has('video')) {
+              params.delete('video');
+              window.history.replaceState({}, '', `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`);
+            }
+          }}
+          relatedVideos={relatedVideos}
           onVideoSelect={handleVideoSelect}
           basketItems={basketItems}
           onToggleBasketItem={toggleBasketItem}
@@ -280,7 +364,7 @@ const App: React.FC = () => {
                       activeDurationFilter={durationFilter}
                       onDurationFilterChange={setDurationFilter}
                       categories={categories}
-                      filteredVideos={filteredVideos}
+                      filteredVideos={videosPage}
                     />
                     <div className="mt-6">
                       <AdSlot title="Ad Slot – 300x250" description="Vertical ad space" />
@@ -297,7 +381,7 @@ const App: React.FC = () => {
                         .filter(cat => cat.value !== 'all')
                         .map(cat => {
                           // Use strict category value match
-                          const catVideos = filteredVideos.filter(v => (v.category || '').toLowerCase() === (cat.value || '').toLowerCase());
+                          const catVideos = videosPage.filter(v => (v.category || '').toLowerCase() === (cat.value || '').toLowerCase());
                           if (catVideos.length === 0) return null;
                           return (
                             <div key={cat.value} className="mb-10">
@@ -321,7 +405,7 @@ const App: React.FC = () => {
                         const cat = categories.find(c => c.value === activeCat);
                         if (!cat) return null;
                         // Use strict category value match
-                        const catVideos = filteredVideos.filter(v => (v.category || '').toLowerCase() === (cat.value || '').toLowerCase());
+                        const catVideos = videosPage.filter(v => (v.category || '').toLowerCase() === (cat.value || '').toLowerCase());
                         if (catVideos.length === 0) {
                           return (
                             <div className="flex flex-col items-center justify-center h-64 text-center bg-neutral-100 dark:bg-neutral-900 rounded-xl">
