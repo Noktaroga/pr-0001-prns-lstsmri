@@ -11,6 +11,7 @@ import { fetchVideosAndCategories } from "./constants";
 import { VideoCardSkeleton } from "./components/VideoCardSkeleton";
 import { VirtualizedVideoGrid } from "./components/VirtualizedVideoGrid";
 import { Video, Category } from "./types";
+import { CATEGORY_LIST } from "./constants";
 import { Basket } from "./components/Basket";
 // Simple FilterIcon inline for toggle filters button
 const FilterIcon = () => (
@@ -32,7 +33,7 @@ const App: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  const [activeCat, setActiveCat] = useState("all");
+  const [activeCat, setActiveCat] = useState(CATEGORY_LIST[0]);
   const [durationFilter, setDurationFilter] = useState<DurationFilter>('all');
   const [showSidebar, setShowSidebar] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
