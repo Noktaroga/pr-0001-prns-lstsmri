@@ -15,23 +15,6 @@ interface HomeProps {
 }
 
 export const Home: React.FC<HomeProps> = ({ videos, onVideoSelect, basketItems, onToggleBasketItem, onCategorySelect }) => {
-    // Progressive loading state
-    const [visibleVideos, setVisibleVideos] = useState<Video[]>([]);
-
-    useEffect(() => {
-        setVisibleVideos([]);
-        if (!videos || videos.length === 0) return;
-        let idx = 0;
-        function revealBatch() {
-            setVisibleVideos(prev => videos.slice(0, Math.min(prev.length + 4, videos.length)));
-            idx += 4;
-            if (idx < videos.length) {
-                setTimeout(revealBatch, 120);
-            }
-        }
-        revealBatch();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [videos]);
     // DEBUG: Mostrar categorías y conteo de videos por categoría
     if (typeof window !== 'undefined') {
         const catCount: Record<string, number> = {};
@@ -46,9 +29,9 @@ export const Home: React.FC<HomeProps> = ({ videos, onVideoSelect, basketItems, 
     // HeroSlider: hasta 1 video top por categoría real, luego rellenar con los más vistos globales
     let featuredVideos: Video[] = [];
     const usedFeaturedIds = new Set<string>();
-    const categoriesInBackend: string[] = Array.from(new Set(visibleVideos.map(v => v.category)));
+    const categoriesInBackend: string[] = Array.from(new Set(videos.map(v => v.category)));
     categoriesInBackend.forEach(cat => {
-        const catVideos = visibleVideos.filter(v => v.category === cat);
+        const catVideos = videos.filter(v => v.category === cat);
         if (catVideos.length > 0) {
             const sorted = [...catVideos].sort((a, b) => (b.views || 0) - (a.views || 0));
             if (!usedFeaturedIds.has(sorted[0].id)) {
@@ -58,7 +41,7 @@ export const Home: React.FC<HomeProps> = ({ videos, onVideoSelect, basketItems, 
         }
     });
     if (featuredVideos.length < 5) {
-        const globalSorted = [...visibleVideos].sort((a, b) => (b.views || 0) - (a.views || 0));
+        const globalSorted = [...videos].sort((a, b) => (b.views || 0) - (a.views || 0));
         for (const v of globalSorted) {
             if (featuredVideos.length >= 5) break;
             if (!usedFeaturedIds.has(v.id)) {
@@ -119,12 +102,12 @@ export const Home: React.FC<HomeProps> = ({ videos, onVideoSelect, basketItems, 
     }
 
     // Most viewed
-    const sortedByViews = [...visibleVideos].sort((a, b) => (b.views || 0) - (a.views || 0));
+    const sortedByViews = [...videos].sort((a, b) => (b.views || 0) - (a.views || 0));
     const maxPerCatMostViewed = numCategories < 9 ? 2 : 1;
     let mostViewedVideos = selectVideosByCategory(sortedByViews, maxPerCatMostViewed, 9);
 
     // Recommended
-    const sortedByRec = [...visibleVideos]
+    const sortedByRec = [...videos]
         .filter(v => (v.good_votes || 0) > 0 && (v.views || 0) > 0)
         .sort((a, b) => {
             if ((b.good_votes || 0) !== (a.good_votes || 0)) {
@@ -134,9 +117,6 @@ export const Home: React.FC<HomeProps> = ({ videos, onVideoSelect, basketItems, 
         });
     const maxPerCatRec = numCategories < 9 ? 2 : 1;
     let recommendedVideos = selectVideosByCategory(sortedByRec, maxPerCatRec, 9);
-
-    // Skeletons: show up to 20 if not loaded
-    const skeletonCount = Math.max(0, videos.length - visibleVideos.length);
 
     return (
         <main className="pt-6">
@@ -163,13 +143,6 @@ export const Home: React.FC<HomeProps> = ({ videos, onVideoSelect, basketItems, 
                 basketItems={basketItems}
                 onToggleBasketItem={onToggleBasketItem}
             />
-            {skeletonCount > 0 && (
-                <div className="flex gap-4 flex-wrap px-4 py-8">
-                    {Array.from({ length: skeletonCount }).map((_, i) => (
-                        <div key={i} className="w-64 sm:w-72 flex-shrink-0"><VideoCardSkeleton /></div>
-                    ))}
-                </div>
-            )}
         </main>
     );
 };

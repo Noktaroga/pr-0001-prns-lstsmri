@@ -26,8 +26,6 @@ const PAGE_SIZE = 20;
 import { VideoDetail } from "./components/VideoDetail";
 
 const App: React.FC = () => {
-  // Progressive loading state for Videos view
-  const [visibleVideos, setVisibleVideos] = useState<Video[]>([]);
   const [videos, setVideos] = useState<Video[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [query, setQuery] = useState('');
@@ -150,20 +148,6 @@ const App: React.FC = () => {
       });
   }, [activeView, currentPage, pageSize, activeCat]);
 
-  // Progressive loading effect for Videos view
-  useEffect(() => {
-    setVisibleVideos([]);
-    if (!videosPage || videosPage.length === 0) return;
-    let idx = 0;
-    function revealBatch() {
-      setVisibleVideos(prev => videosPage.slice(0, Math.min(prev.length + 4, videosPage.length)));
-      idx += 4;
-      if (idx < videosPage.length) {
-        setTimeout(revealBatch, 120);
-      }
-    }
-    revealBatch();
-  }, [videosPage]);
 
   // ---------------------------
   // Helpers de filtrado/paginación
@@ -371,11 +355,7 @@ const App: React.FC = () => {
             />
           )}
 
-          {activeView === 'videos' && (
-            <>
-              {/* Progressive loading for Videos view handled by top-level state/effect */}
-            </>
-          )}
+          {/* No progressive loading logic here */}
           {activeView === 'videos' && (
             <>
               <main className="mx-auto grid max-w-7xl grid-cols-1 gap-6 px-4 py-6 sm:px-6 lg:grid-cols-12 lg:px-8">
@@ -412,7 +392,6 @@ const App: React.FC = () => {
                       />
                     </div>
                   )}
-                  {/* Progressive loading for Videos view */}
                   {loading ? (
                     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                       {Array.from({ length: 12 }).map((_, i) => (
@@ -420,25 +399,16 @@ const App: React.FC = () => {
                       ))}
                     </div>
                   ) : (
-                    <>
-                      <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
-                        <VirtualizedVideoGrid
-                          videos={visibleVideos}
-                          onVideoSelect={handleVideoSelect}
-                          basketItems={basketItems}
-                          onToggleBasketItem={toggleBasketItem}
-                          columns={4}
-                          rowHeight={340}
-                        />
-                      </div>
-                      {videosPage.length - visibleVideos.length > 0 && (
-                        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 mt-4">
-                          {Array.from({ length: videosPage.length - visibleVideos.length }).map((_, i) => (
-                            <div key={i}><VideoCardSkeleton /></div>
-                          ))}
-                        </div>
-                      )}
-                    </>
+                    <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
+                      <VirtualizedVideoGrid
+                        videos={videosPage}
+                        onVideoSelect={handleVideoSelect}
+                        basketItems={basketItems}
+                        onToggleBasketItem={toggleBasketItem}
+                        columns={4}
+                        rowHeight={340}
+                      />
+                    </div>
                   )}
                   {activeView === 'videos' && totalPages > 1 && videosPage.length > 0 && (
                     <div className="mt-6">
