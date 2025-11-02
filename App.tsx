@@ -9,7 +9,7 @@ import { Pagination } from "./components/Pagination";
 import { Home } from "./components/Home";
 import { fetchVideosAndCategories } from "./constants";
 import { VideoCardSkeleton } from "./components/VideoCardSkeleton";
-import { VirtualizedVideoList } from "./components/VirtualizedVideoList";
+import { VirtualizedVideoGrid } from "./components/VirtualizedVideoGrid";
 import { Video, Category } from "./types";
 import { Basket } from "./components/Basket";
 // Simple FilterIcon inline for toggle filters button
@@ -111,7 +111,7 @@ const App: React.FC = () => {
       });
   }, []);
 
-  // Fetch paginado SOLO para la vista 'videos'
+  // Fetch paginado SOLO cuando el usuario interactúa con el paginador
   useEffect(() => {
     if (activeView !== 'videos') return;
     setLoading(true);
@@ -124,17 +124,20 @@ const App: React.FC = () => {
       .then(async (res) => {
         if (!res.ok) throw new Error('No se pudo obtener /api/videos');
         const data = await res.json();
-        // Normaliza si el backend devuelve objeto de arrays por categoría
         let allRawVideos;
+        let totalCount = 0;
         if (Array.isArray(data.videos)) {
           allRawVideos = data.videos.filter(Boolean);
+          totalCount = typeof data.total === 'number' ? data.total : allRawVideos.length;
         } else if (data && typeof data === 'object') {
           allRawVideos = Object.values(data).flat().filter(Boolean);
+          totalCount = typeof data.total === 'number' ? data.total : allRawVideos.length;
         } else {
           allRawVideos = [];
+          totalCount = 0;
         }
         setVideosPage(allRawVideos);
-        setTotalVideos(allRawVideos.length);
+        setTotalVideos(totalCount);
       })
       .catch((err) => {
         console.error("Error cargando datos desde API:", err);
@@ -331,7 +334,7 @@ const App: React.FC = () => {
               window.history.replaceState({}, '', `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`);
             }
           }}
-          allVideos={videos}
+          relatedVideos={videos}
           onVideoSelect={handleVideoSelect}
           basketItems={basketItems}
           onToggleBasketItem={toggleBasketItem}
@@ -378,6 +381,15 @@ const App: React.FC = () => {
                   <div className="mb-4 flex items-center justify-between gap-4">
                     <h2 className="text-lg font-semibold">Videos por categoría</h2>
                   </div>
+                  {activeView === 'videos' && totalPages > 1 && videosPage.length > 0 && (
+                    <div className="mb-4">
+                      <Pagination 
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={setCurrentPage}
+                      />
+                    </div>
+                  )}
                   {loading ? (
                     // Skeletons para la grilla de videos
                     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
@@ -389,22 +401,28 @@ const App: React.FC = () => {
                     </div>
                   ) : (
                     <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
-                      <VirtualizedVideoList
+                      <VirtualizedVideoGrid
                         videos={videosPage}
                         onVideoSelect={handleVideoSelect}
                         basketItems={basketItems}
                         onToggleBasketItem={toggleBasketItem}
-                        itemHeight={340}
+                        columns={4}
+                        rowHeight={340}
                       />
                     </div>
                   )}
-                  <div className="mt-6">
-                    <Pagination 
+                  {activeView === 'videos' && totalPages > 1 && videosPage.length > 0 && (
+                    <div className="mt-6">
+                      <Pagination 
                         currentPage={currentPage}
                         totalPages={totalPages}
                         onPageChange={setCurrentPage}
-                    />
-                  </div>
+                      />
+                    </div>
+                  )}
+                  {activeView === 'videos' && videosPage.length === 0 && !loading && (
+                    <div className="text-center text-neutral-500 py-12">No hay videos para mostrar.</div>
+                  )}
                   <div className="mt-8">
                     <AdSlot title="Ad Slot – 728x90" description="Horizontal ad space" />
                   </div>
