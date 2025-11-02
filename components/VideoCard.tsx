@@ -228,7 +228,7 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick, isInBasket
       <button onClick={onClick} className="block w-full text-left">
         <div className="relative h-40 w-full bg-gradient-to-br from-neutral-200 to-neutral-300 dark:from-neutral-800 dark:to-neutral-700">
           {isValidThumbnail && (
-            <img src={currentImage} alt={title} className="h-full w-full object-cover transition-opacity duration-200" />
+            <img src={currentImage} alt={title} loading="lazy" className="h-full w-full object-cover transition-opacity duration-200" />
           )}
           <span className="absolute bottom-2 right-2 rounded bg-black/70 px-1.5 py-0.5 text-xs text-white">{duration}</span>
         </div>

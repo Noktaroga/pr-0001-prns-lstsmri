@@ -9,6 +9,7 @@ import { Pagination } from "./components/Pagination";
 import { Home } from "./components/Home";
 import { fetchVideosAndCategories } from "./constants";
 import { VideoCardSkeleton } from "./components/VideoCardSkeleton";
+import { VirtualizedVideoGrid } from "./components/VirtualizedVideoGrid";
 import { Video, Category } from "./types";
 import { Basket } from "./components/Basket";
 // Simple FilterIcon inline for toggle filters button
@@ -387,62 +388,16 @@ const App: React.FC = () => {
                       ))}
                     </div>
                   ) : (
-                    activeCat === 'all'
-                      ? categories
-                          .filter(cat => cat.value !== 'all')
-                          .map(cat => {
-                            // Use strict category value match
-                            const catVideos = videosPage.filter(v => (v.category || '').toLowerCase() === (cat.value || '').toLowerCase());
-                            if (catVideos.length === 0) return null;
-                            return (
-                              <div key={cat.value} className="mb-10">
-                                <h3 className="text-lg font-bold mb-3 px-2 text-blue-700 dark:text-blue-300">{cat.label}</h3>
-                                <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4" role="list">
-                                  {catVideos.map((v) => (
-                                    <li key={v.id}>
-                                      <VideoCard
-                                        video={v}
-                                        onClick={() => handleVideoSelect(v)}
-                                        isInBasket={basketItems.includes(v.id)}
-                                        onToggleBasketItem={toggleBasketItem}
-                                      />
-                                    </li>
-                                  ))}
-                                </ul>
-                              </div>
-                            );
-                          })
-                      : (() => {
-                          const cat = categories.find(c => c.value === activeCat);
-                          if (!cat) return null;
-                          // Use strict category value match
-                          const catVideos = videosPage.filter(v => (v.category || '').toLowerCase() === (cat.value || '').toLowerCase());
-                          if (catVideos.length === 0) {
-                            return (
-                              <div className="flex flex-col items-center justify-center h-64 text-center bg-neutral-100 dark:bg-neutral-900 rounded-xl">
-                                <p className="text-lg font-medium text-neutral-600 dark:text-neutral-400">No videos found</p>
-                                <p className="text-sm text-neutral-500 dark:text-neutral-500">Try adjusting your search or filters.</p>
-                              </div>
-                            );
-                          }
-                          return (
-                            <div key={cat.value} className="mb-10">
-                              <h3 className="text-lg font-bold mb-3 px-2 text-blue-700 dark:text-blue-300">{cat.label}</h3>
-                              <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4" role="list">
-                                {catVideos.map((v) => (
-                                  <li key={v.id}>
-                                    <VideoCard
-                                      video={v}
-                                      onClick={() => handleVideoSelect(v)}
-                                      isInBasket={basketItems.includes(v.id)}
-                                      onToggleBasketItem={toggleBasketItem}
-                                    />
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          );
-                        })()
+                    <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
+                      <VirtualizedVideoGrid
+                        videos={videosPage}
+                        onVideoSelect={handleVideoSelect}
+                        basketItems={basketItems}
+                        onToggleBasketItem={toggleBasketItem}
+                        columnCount={4}
+                        rowHeight={320}
+                      />
+                    </div>
                   )}
                   <div className="mt-6">
                     <Pagination 
