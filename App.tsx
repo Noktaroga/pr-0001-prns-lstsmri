@@ -9,7 +9,7 @@ import { Pagination } from "./components/Pagination";
 import { Home } from "./components/Home";
 import { fetchVideosAndCategories } from "./constants";
 import { VideoCardSkeleton } from "./components/VideoCardSkeleton";
-import { VirtualizedVideoGrid } from "./components/VirtualizedVideoGrid";
+import { VirtualizedVideoList } from "./components/VirtualizedVideoList";
 import { Video, Category } from "./types";
 import { Basket } from "./components/Basket";
 // Simple FilterIcon inline for toggle filters button
@@ -389,13 +389,12 @@ const App: React.FC = () => {
                     </div>
                   ) : (
                     <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
-                      <VirtualizedVideoGrid
+                      <VirtualizedVideoList
                         videos={videosPage}
                         onVideoSelect={handleVideoSelect}
                         basketItems={basketItems}
                         onToggleBasketItem={toggleBasketItem}
-                        columnCount={4}
-                        rowHeight={320}
+                        itemHeight={340}
                       />
                     </div>
                   )}
