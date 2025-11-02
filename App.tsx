@@ -37,7 +37,15 @@ const App: React.FC = () => {
   const [showSidebar, setShowSidebar] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
   // Paginación solo para la vista 'videos'
-  const [currentPage, setCurrentPage] = useState(1);
+  // Paginación sincronizada con la URL
+  const getPageFromUrl = () => {
+    const search = window.location.search;
+    const path = window.location.pathname;
+    const params = new URLSearchParams(search);
+    const page = parseInt(params.get('page') || '1', 10);
+    return path.startsWith('/videos') && (!page || page < 1) ? 1 : (isNaN(page) || page < 1 ? 1 : page);
+  };
+  const [currentPage, setCurrentPage] = useState(getPageFromUrl());
   const [pageSize] = useState(PAGE_SIZE);
   const [totalVideos, setTotalVideos] = useState(0);
   const [videosPage, setVideosPage] = useState<Video[]>([]);
@@ -120,6 +128,7 @@ const App: React.FC = () => {
     if (activeCat && activeCat !== 'all') {
       url += `&category=${encodeURIComponent(activeCat)}`;
     }
+    console.log('[DEBUG] Fetch triggered. currentPage:', currentPage, '| activeCat:', activeCat, '| URL:', url);
     fetch(url)
       .then(async (res) => {
         if (!res.ok) throw new Error('No se pudo obtener /api/videos');
@@ -136,8 +145,9 @@ const App: React.FC = () => {
           allRawVideos = [];
           totalCount = 0;
         }
-        setVideosPage(allRawVideos);
-        setTotalVideos(totalCount);
+  console.log('[DEBUG] API response videos count:', allRawVideos.length, '| Mostrando solo estos videos en la vista paginada.');
+  setVideosPage(allRawVideos);
+  setTotalVideos(totalCount);
       })
       .catch((err) => {
         console.error("Error cargando datos desde API:", err);
@@ -187,7 +197,41 @@ const App: React.FC = () => {
   // resetear página cuando cambian filtros
   useEffect(() => {
     setCurrentPage(1);
-  }, [query, activeCat, durationFilter]);
+    if (activeView === 'videos') {
+      const params = new URLSearchParams(window.location.search);
+      params.set('page', '1');
+      window.history.replaceState({}, '', `/videos?${params.toString()}`);
+    } else if (activeView === 'home') {
+      window.history.replaceState({}, '', '/Home');
+    }
+  }, [query, activeCat, durationFilter, activeView]);
+
+  // Sincronizar currentPage con la URL
+  useEffect(() => {
+    const onPopState = () => {
+      setCurrentPage(getPageFromUrl());
+      // Cambiar vista según path
+      const path = window.location.pathname.toLowerCase();
+      if (path.startsWith('/videos')) {
+        setActiveView('videos');
+      } else if (path === '/home' || path === '/') {
+        setActiveView('home');
+      }
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
+
+  // Actualizar la URL cuando cambia currentPage
+  useEffect(() => {
+    if (activeView === 'videos') {
+      const params = new URLSearchParams(window.location.search);
+      params.set('page', String(currentPage));
+      window.history.replaceState({}, '', `/videos?${params.toString()}`);
+    } else if (activeView === 'home') {
+      window.history.replaceState({}, '', '/Home');
+    }
+  }, [currentPage, activeView]);
 
   // Solo para la vista 'videos', el paginado viene del backend
   const totalPages = activeView === 'videos' ? Math.ceil(totalVideos / pageSize) : 1;
@@ -246,11 +290,19 @@ const App: React.FC = () => {
   const handleViewChange = (view: 'home' | 'videos') => {
     setActiveView(view);
     setSelectedVideo(null);
-    // Remove video param from URL
     const params = new URLSearchParams(window.location.search);
     if (params.has('video')) {
       params.delete('video');
-      window.history.replaceState({}, '', `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`);
+    }
+    let newPath = '/';
+    if (view === 'videos') {
+      if (!params.get('page')) params.set('page', '1');
+      newPath = '/videos';
+      window.history.replaceState({}, '', `${newPath}${params.toString() ? '?' + params.toString() : ''}`);
+    } else {
+      // Home: limpiar todos los parámetros
+      newPath = '/Home';
+      window.history.replaceState({}, '', newPath);
     }
   };
 
@@ -290,9 +342,13 @@ const App: React.FC = () => {
         onToggleBasket={toggleBasketModal}
       />
 
-      {/* Neon animated bulletin bar (alternates between red and purple) */}
+      {/* Navegación y bulletin bar */}
       {(activeView === 'home' || activeView === 'videos') && (
         <>
+          <nav className="flex gap-4 justify-center my-4">
+            <a href="/Home" onClick={e => { e.preventDefault(); handleViewChange('home'); }} className={activeView === 'home' ? 'font-bold underline' : ''}>Home</a>
+            <a href="/videos?page=1" onClick={e => { e.preventDefault(); handleViewChange('videos'); setCurrentPage(1); }} className={activeView === 'videos' ? 'font-bold underline' : ''}>Videos</a>
+          </nav>
           <style>{`
             @keyframes neonPulse {
               0%, 100% {
