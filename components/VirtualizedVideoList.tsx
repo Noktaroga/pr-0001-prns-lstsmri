@@ -1,7 +1,8 @@
-import React from 'react';
-import { FixedSizeList as List } from 'react-window';
+import React, { useRef } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { Video } from '../types';
 import { VideoCard } from './VideoCard';
+
 
 interface VirtualizedVideoListProps {
   videos: Video[];
@@ -18,28 +19,57 @@ export const VirtualizedVideoList: React.FC<VirtualizedVideoListProps> = ({
   onToggleBasketItem,
   itemHeight = 340,
 }) => {
+  const parentRef = useRef<HTMLDivElement>(null);
+  const rowVirtualizer = useVirtualizer({
+    count: videos.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => itemHeight,
+    overscan: 6,
+  });
+
   const height = Math.min(videos.length * itemHeight, 960);
 
   return (
-    <List
-      height={height}
-      itemCount={videos.length}
-      itemSize={itemHeight}
-      width={1200}
-    >
-      {({ index, style }) => {
-        const video = videos[index];
-        return (
-          <div style={style} key={video.id}>
-            <VideoCard
-              video={video}
-              onClick={() => onVideoSelect(video)}
-              isInBasket={basketItems.includes(video.id)}
-              onToggleBasketItem={onToggleBasketItem}
-            />
-          </div>
-        );
+    <div
+      ref={parentRef}
+      style={{
+        height: `${height}px`,
+        width: '100%',
+        overflow: 'auto',
+        position: 'relative',
       }}
-    </List>
+    >
+      <div
+        style={{
+          height: `${rowVirtualizer.getTotalSize()}px`,
+          width: '100%',
+          position: 'relative',
+        }}
+      >
+        {rowVirtualizer.getVirtualItems().map(virtualRow => {
+          const video = videos[virtualRow.index];
+          return (
+            <div
+              key={video.id}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: `${virtualRow.size}px`,
+                transform: `translateY(${virtualRow.start}px)`,
+              }}
+            >
+              <VideoCard
+                video={video}
+                onClick={() => onVideoSelect(video)}
+                isInBasket={basketItems.includes(video.id)}
+                onToggleBasketItem={onToggleBasketItem}
+              />
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 };
