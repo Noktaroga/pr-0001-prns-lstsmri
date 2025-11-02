@@ -14,6 +14,8 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { Video } from '../types';
 import { AdSlot } from './AdSlot';
+import JuicyAdsVertical from './JuicyAdsVertical';
+import JuicyAdsHorizontal from './JuicyAdsHorizontal';
 import { VideoCarousel } from './VideoCarousel';
 
 interface Comment {
@@ -392,6 +394,8 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
 
              <div className="mt-8">
                 <AdSlot title="Ad Slot – 300x250" description="Vertical ad space" />
+                {/* JuicyAds 160x600 vertical banner (React) */}
+                <JuicyAdsVertical adzoneId={1104272} width={160} height={600} />
              </div>
         </div>
       </div>
@@ -411,7 +415,7 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
     )}
 
       <div className="mt-12 px-4 sm:px-0">
-        <AdSlot title="Ad Slot – 728x90" description="Horizontal ad space" />
+  <JuicyAdsHorizontal adzoneId={1104273} width={728} height={90} />
       </div>
     </main>
   );

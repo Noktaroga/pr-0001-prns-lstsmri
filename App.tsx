@@ -4,6 +4,7 @@ import { Sidebar } from "./components/Sidebar";
 import { Footer } from "./components/Footer";
 import { VideoCard } from "./components/VideoCard";
 import { AdSlot } from "./components/AdSlot";
+import JuicyAdsHorizontal from "./components/JuicyAdsHorizontal";
 import { CategoryFilter } from "./components/CategoryFilter";
 import { Pagination } from "./components/Pagination";
 import { Home } from "./components/Home";
@@ -480,7 +481,7 @@ const App: React.FC = () => {
                     <div className="text-center text-neutral-500 py-12">No hay videos para mostrar.</div>
                   )}
                   <div className="mt-8">
-                    <AdSlot title="Ad Slot – 728x90" description="Horizontal ad space" />
+                    <JuicyAdsHorizontal adzoneId={1104273} width={728} height={90} />
                   </div>
                 </section>
               </main>

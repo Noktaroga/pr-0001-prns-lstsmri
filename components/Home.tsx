@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Video } from '../types';
 import { HeroSlider } from './HeroSlider';
 import { VideoCarousel } from './VideoCarousel';
+import JuicyAdsHorizontal from './JuicyAdsHorizontal';
 import { CATEGORY_LIST } from '../constants';
 import { VideoCardSkeleton } from './VideoCardSkeleton';
 

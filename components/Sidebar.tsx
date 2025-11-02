@@ -73,6 +73,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
           ))}
         </div>
       </div>
+
+      {/* --- JuicyAds 300x250 Ad --- */}
+      <div className="flex justify-center mt-4">
+        {/* JuicyAds v3.0 */}
+        <div style={{ width: 300, height: 250 }}>
+          <script type="text/javascript" data-cfasync="false" async src="https://poweredby.jads.co/js/jads.js"></script>
+          <ins id="1104271" data-width="300" data-height="250"></ins>
+          <script type="text/javascript" data-cfasync="false" async>{`(adsbyjuicy = window.adsbyjuicy || []).push({'adzone':1104271});`}</script>
+        </div>
+        {/* JuicyAds END */}
+      </div>
     </div>
   );
 };
