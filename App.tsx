@@ -122,8 +122,17 @@ const App: React.FC = () => {
       .then(async (res) => {
         if (!res.ok) throw new Error('No se pudo obtener /api/videos');
         const data = await res.json();
-        setVideosPage(data.videos);
-        setTotalVideos(data.total);
+        // Normaliza si el backend devuelve objeto de arrays por categoría
+        let allRawVideos;
+        if (Array.isArray(data.videos)) {
+          allRawVideos = data.videos.filter(Boolean);
+        } else if (data && typeof data === 'object') {
+          allRawVideos = Object.values(data).flat().filter(Boolean);
+        } else {
+          allRawVideos = [];
+        }
+        setVideosPage(allRawVideos);
+        setTotalVideos(allRawVideos.length);
       })
       .catch((err) => {
         console.error("Error cargando datos desde API:", err);
