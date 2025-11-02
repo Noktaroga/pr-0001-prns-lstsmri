@@ -34,7 +34,6 @@ const App: React.FC = () => {
   const [durationFilter, setDurationFilter] = useState<DurationFilter>('all');
   const [showSidebar, setShowSidebar] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
-  const [relatedVideos, setRelatedVideos] = useState<Video[]>([]);
   // Paginación solo para la vista 'videos'
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(PAGE_SIZE);
@@ -188,14 +187,6 @@ const App: React.FC = () => {
     window.scrollTo(0, 0);
     // Push video ID to URL
     window.history.pushState({ videoId: video.id }, '', `?video=${video.id}`);
-    // Fetch related videos for this category
-    fetch(`/api/videos?page=1&size=12&category=${encodeURIComponent(video.category)}`)
-      .then(res => res.ok ? res.json() : Promise.reject('No se pudo obtener /api/videos'))
-      .then(data => {
-        const rel = (data.videos || []).filter((v: any) => v.id !== video.id);
-        setRelatedVideos(rel);
-      })
-      .catch(() => setRelatedVideos([]));
   };
 
   // Handle browser navigation (back/forward)
@@ -329,7 +320,7 @@ const App: React.FC = () => {
               window.history.replaceState({}, '', `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`);
             }
           }}
-          relatedVideos={relatedVideos}
+          allVideos={videos}
           onVideoSelect={handleVideoSelect}
           basketItems={basketItems}
           onToggleBasketItem={toggleBasketItem}

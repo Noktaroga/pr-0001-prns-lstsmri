@@ -283,7 +283,12 @@ export const fetchVideosAndCategories = async (): Promise<{
         throw new Error('No se pudo obtener /api/videos');
     }
     const data = await res.json();
-    const videos: Video[] = (data.videos || []).map(transformRawVideoToVideo).filter(Boolean);
+    // Normalize: backend returns { "/c/AI-239": [ ... ], ... }
+    // Filtrar nulos antes de mapear
+    const allRawVideos = Object.values(data).flat().filter(Boolean);
+    const videos: Video[] = allRawVideos
+        .map(transformRawVideoToVideo)
+        .filter(Boolean); // Por si transformRawVideoToVideo retorna null
     const categories = buildCategoriesFromFixedList();
     return {
         videos,
