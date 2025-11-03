@@ -1,3 +1,22 @@
+const BlackAdPlaceholderSquare: React.FC = () => (
+  <div style={{ width: 250, height: 250, marginLeft: 32 }}>
+    {/* JuicyAds v3.0 */}
+    <script type="text/javascript" data-cfasync="false" async src="https://poweredby.jads.co/js/jads.js"></script>
+    <ins id="1104274" data-width="250" data-height="250"></ins>
+    <script type="text/javascript" data-cfasync="false" async>{`(adsbyjuicy = window.adsbyjuicy || []).push({'adzone':1104274});`}</script>
+    {/* JuicyAds END */}
+  </div>
+);
+const BlackAdPlaceholderLarge: React.FC = () => (
+  <div style={{ width: 908, height: 258 }}>
+    {/* JuicyAds v3.0 */}
+    <script type="text/javascript" data-cfasync="false" async src="https://poweredby.jads.co/js/jads.js"></script>
+    <ins id="1104273" data-width="908" data-height="258"></ins>
+    <script type="text/javascript" data-cfasync="false" async>{`(adsbyjuicy = window.adsbyjuicy || []).push({'adzone':1104273});`}</script>
+    {/* JuicyAds END */}
+  </div>
+);
+import BlackAdPlaceholder from "./components/BlackAdPlaceholder";
 import React, { useMemo, useState, useEffect } from "react";
 import { Header } from "./components/Header";
 import { Sidebar } from "./components/Sidebar";
@@ -5,6 +24,7 @@ import { Footer } from "./components/Footer";
 import { VideoCard } from "./components/VideoCard";
 import { AdSlot } from "./components/AdSlot";
 import JuicyAdsHorizontal from "./components/JuicyAdsHorizontal";
+import JuicyAdsVertical from "./components/JuicyAdsVertical";
 import { CategoryFilter } from "./components/CategoryFilter";
 import { Pagination } from "./components/Pagination";
 import { Home } from "./components/Home";
@@ -23,7 +43,7 @@ const FilterIcon = () => (
 
 
 type DurationFilter = 'all' | 'tiny' | 'short' | 'long';
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 36;
 
 import { VideoDetail } from "./components/VideoDetail";
 
@@ -333,7 +353,7 @@ const App: React.FC = () => {
   }
 
   return (
-  <div className="min-h-screen bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100" style={{ fontFamily: 'Inter, Segoe UI, Arial, sans-serif' }}>
+  <div className="min-h-screen bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100 flex flex-col" style={{ fontFamily: 'Inter, Segoe UI, Arial, sans-serif', minHeight: '100vh' }}>
       <Header
         onToggleSidebar={() => setShowSidebar((s) => !s)}
         query={query}
@@ -347,10 +367,7 @@ const App: React.FC = () => {
       {/* Navegación y bulletin bar */}
       {(activeView === 'home' || activeView === 'videos') && (
         <>
-          <nav className="flex gap-4 justify-center my-4">
-            <a href="/Home" onClick={e => { e.preventDefault(); handleViewChange('home'); }} className={activeView === 'home' ? 'font-bold underline' : ''}>Home</a>
-            <a href="/videos?page=1" onClick={e => { e.preventDefault(); handleViewChange('videos'); setCurrentPage(1); }} className={activeView === 'videos' ? 'font-bold underline' : ''}>Videos</a>
-          </nav>
+          {/* Navigation removed as per user request */}
           <style>{`
             @keyframes neonPulse {
               0%, 100% {
@@ -416,11 +433,11 @@ const App: React.FC = () => {
           {/* No progressive loading logic here */}
           {activeView === 'videos' && (
             <>
-              <main className="mx-auto grid max-w-7xl grid-cols-1 gap-6 px-4 py-6 sm:px-6 lg:grid-cols-12 lg:px-8">
+              <main className="w-full grid grid-cols-1 gap-4 xl:grid-cols-12">
                 <aside
-                  className={`lg:col-span-3 transition-transform duration-300 ease-in-out ${
-                    showSidebar ? "block" : "hidden lg:block"
-                  }`}
+                  className={`xl:col-span-2 transition-transform duration-300 ease-in-out ${
+                    showSidebar ? "block" : "hidden xl:block"
+                  } ml-2 md:ml-4 xl:ml-6`}
                   aria-label="Sidebar navigation"
                 >
                   <div className="lg:sticky lg:top-28">
@@ -431,13 +448,10 @@ const App: React.FC = () => {
                       categories={categories}
                       filteredVideos={videosPage}
                     />
-                    <div className="mt-6">
-                      <AdSlot title="Ad Slot – 300x250" description="Vertical ad space" />
-                    </div>
                   </div>
                 </aside>
 
-                <section className="lg:col-span-9" aria-label="Results">
+                <section className="xl:col-span-8 lg:col-span-9" aria-label="Results">
                   <div className="mb-4 flex items-center justify-between gap-4">
                     <h2 className="text-lg font-semibold">Videos por categoría</h2>
                   </div>
@@ -457,33 +471,51 @@ const App: React.FC = () => {
                       ))}
                     </div>
                   ) : (
-                    <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
+                    <div style={{ width: '100%' }}>
                       <VirtualizedVideoGrid
                         videos={videosPage}
                         onVideoSelect={handleVideoSelect}
                         basketItems={basketItems}
                         onToggleBasketItem={toggleBasketItem}
-                        columns={4}
+                        columns={6}
                         rowHeight={340}
                       />
                     </div>
                   )}
                   {activeView === 'videos' && totalPages > 1 && videosPage.length > 0 && (
-                    <div className="mt-6">
-                      <Pagination 
-                        currentPage={currentPage}
-                        totalPages={totalPages}
-                        onPageChange={setCurrentPage}
-                      />
-                    </div>
+                    <>
+                      <div className="mt-1">
+                        <Pagination 
+                          currentPage={currentPage}
+                          totalPages={totalPages}
+                          onPageChange={setCurrentPage}
+                        />
+                      </div>
+                      {/* White grid for ad below the video grid */}
+                      <div className="w-full rounded-xl shadow-lg h-[400px] flex items-center pl-8" style={{ background: 'transparent' }}>
+                        <BlackAdPlaceholderLarge />
+                        <BlackAdPlaceholderSquare />
+                      </div>
+                    </>
                   )}
                   {activeView === 'videos' && videosPage.length === 0 && !loading && (
                     <div className="text-center text-neutral-500 py-12">No hay videos para mostrar.</div>
                   )}
-                  <div className="mt-8">
-                    <JuicyAdsHorizontal adzoneId={1104273} width={728} height={90} />
-                  </div>
                 </section>
+
+                {/* Black 160x600 ad placeholder in its own right column, fixed at top */}
+                <div className="hidden xl:flex xl:col-span-2" style={{ marginLeft: '8px', marginRight: '8px' }}>
+                  <div style={{ position: 'sticky', top: 32, zIndex: 10, display: 'flex', flexDirection: 'column', gap: 24 }}>
+                    <BlackAdPlaceholder />
+                    <BlackAdPlaceholder />
+                    <BlackAdPlaceholder />
+                    <BlackAdPlaceholder />
+                  </div>
+                </div>
+                {/* Responsive: show ad below grid on mobile/tablet */}
+                <div className="flex xl:hidden w-full justify-center my-4">
+                  <BlackAdPlaceholder />
+                </div>
               </main>
               <button
                 onClick={() => setShowSidebar((s) => !s)}
@@ -499,7 +531,6 @@ const App: React.FC = () => {
       )}
 
       <Footer />
-      
       <Basket
         isOpen={isBasketOpen}
         onClose={toggleBasketModal}

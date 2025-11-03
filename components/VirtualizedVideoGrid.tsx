@@ -29,15 +29,15 @@ export const VirtualizedVideoGrid: React.FC<VirtualizedVideoGridProps> = ({
 		overscan: 6,
 	});
 
-	const height = Math.min(rowCount * rowHeight, 960);
+	const height = rowCount * rowHeight;
 
 	return (
 		<div
 			ref={parentRef}
 			style={{
-				height: `${height}px`,
+				minHeight: `${height}px`,
 				width: '100%',
-				overflow: 'auto',
+				overflow: 'visible',
 				position: 'relative',
 			}}
 		>

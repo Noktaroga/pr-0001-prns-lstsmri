@@ -141,6 +141,7 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
   const [commentsList, setCommentsList] = useState<Comment[]>(initialComments);
   const [newComment, setNewComment] = useState("");
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [adOverlayStep, setAdOverlayStep] = useState(1); // 1: first ad, 2: second ad, 0: none
   
   const [currentQuality, setCurrentQuality] = useState(sources[0]?.quality || 'default');
         const [validSourceUrl, setValidSourceUrl] = useState<string | null>(null);
@@ -185,16 +186,26 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
     
     loadProgress();
 
+    // Block play if ad overlay is visible
+    const blockPlay = (e: Event) => {
+      if (adOverlayStep !== 0) {
+        e.preventDefault();
+        videoElement.pause();
+      }
+    };
+    videoElement.addEventListener('play', blockPlay, true);
+
     return () => {
         stopSavingProgress();
         videoElement.removeEventListener('loadedmetadata', loadProgress);
         videoElement.removeEventListener('play', startSavingProgress);
         videoElement.removeEventListener('pause', stopSavingProgress);
+        videoElement.removeEventListener('play', blockPlay, true);
         if (videoElement) {
           localStorage.setItem(progressKey, String(videoElement.currentTime));
         }
     };
-  }, [id]);
+  }, [id, adOverlayStep]);
 
   // Effect for fullscreen detection
   useEffect(() => {
@@ -312,27 +323,61 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
                 ) : fetchError ? (
                   <div className="flex items-center justify-center h-full text-red-600">{fetchError}</div>
                 ) : videoLinks.length > 0 ? (
-                  <video
-                    ref={videoRef}
-                    key={videoLinks[videoLinks.length - 1] || 'no-link'}
-                    controls
-                    className="h-full w-full object-contain"
-                    {...(video.thumbnail ? { poster: video.thumbnail } : {})}
-                    crossOrigin="anonymous"
-                    onError={e => {
-                      console.error('[VideoDetail] <video> onError', e, 'src:', videoLinks[videoLinks.length - 1]);
-                    }}
-                    onLoadedData={e => {
-                      console.debug('[VideoDetail] <video> onLoadedData', e, 'src:', videoLinks[videoLinks.length - 1]);
-                    }}
-                    onPlay={e => {
-                      console.debug('[VideoDetail] <video> onPlay', e, 'src:', videoLinks[videoLinks.length - 1]);
-                    }}
-                  >
-                    {/* Usar el último enlace como fuente principal */}
-                    <source src={videoLinks[1]} type="video/mp4" />
-                    Your browser does not support the video tag.
-                  </video>
+                  <div className="relative w-full h-full">
+                    <video
+                      ref={videoRef}
+                      key={videoLinks[videoLinks.length - 1] || 'no-link'}
+                      controls
+                      className="h-full w-full object-contain"
+                      {...(video.thumbnail ? { poster: video.thumbnail } : {})}
+                      crossOrigin="anonymous"
+                      onError={e => {
+                        console.error('[VideoDetail] <video> onError', e, 'src:', videoLinks[videoLinks.length - 1]);
+                      }}
+                      onLoadedData={e => {
+                        console.debug('[VideoDetail] <video> onLoadedData', e, 'src:', videoLinks[videoLinks.length - 1]);
+                      }}
+                      onPlay={e => {
+                        console.debug('[VideoDetail] <video> onPlay', e, 'src:', videoLinks[videoLinks.length - 1]);
+                      }}
+                    >
+                      {/* Usar el último enlace como fuente principal */}
+                      <source src={videoLinks[1]} type="video/mp4" />
+                      Your browser does not support the video tag.
+                    </video>
+                    {adOverlayStep === 1 && (
+                      <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/80">
+                        {/* JuicyAds v3.0 - Primer anuncio */}
+                        <div
+                          id="juicy-ad-1104275"
+                          className="mb-4 flex items-center justify-center cursor-pointer"
+                          style={{ width: 308, height: 286, background: 'white', borderRadius: 12 }}
+                          onClick={() => setAdOverlayStep(2)}
+                        >
+                          <script type="text/javascript" data-cfasync="false" async src="https://poweredby.jads.co/js/jads.js"></script>
+                          <ins id="1104275" data-width="308" data-height="286"></ins>
+                          <script type="text/javascript" data-cfasync="false" async>{`(adsbyjuicy = window.adsbyjuicy || []).push({'adzone':1104275});`}</script>
+                        </div>
+                        <div className="text-xs text-neutral-200 mt-2">Haz click en el anuncio para continuar</div>
+                      </div>
+                    )}
+                    {adOverlayStep === 2 && (
+                      <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/80">
+                        {/* JuicyAds v3.0 - Segundo anuncio (puedes cambiar el adzone si tienes otro) */}
+                        <div
+                          id="juicy-ad-1104276"
+                          className="mb-4 flex items-center justify-center cursor-pointer"
+                          style={{ width: 308, height: 286, background: 'white', borderRadius: 12 }}
+                          onClick={() => setAdOverlayStep(0)}
+                        >
+                          <script type="text/javascript" data-cfasync="false" async src="https://poweredby.jads.co/js/jads.js"></script>
+                          <ins id="1104275" data-width="308" data-height="286"></ins>
+                          <script type="text/javascript" data-cfasync="false" async>{`(adsbyjuicy = window.adsbyjuicy || []).push({'adzone':1104275});`}</script>
+                        </div>
+                        <div className="text-xs text-neutral-200 mt-2">Haz click en el anuncio para desbloquear el video</div>
+                      </div>
+                    )}
+                  </div>
                 ) : (
                   <div className="flex items-center justify-center h-full">No se encontraron enlaces de video.</div>
                 )}
@@ -374,34 +419,41 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
 
 
 
-                         <div className="mt-6 flex gap-2">
-                                <button className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white shadow hover:opacity-90 dark:bg-white dark:text-neutral-900">
-                                        Like
-                                </button>
-                                <button 
-                                    onClick={() => onToggleBasketItem(id)}
-                                    className={`flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium transition-colors ${
-                                        isVideoInBasket 
-                                            ? 'border-neutral-400 bg-neutral-100 dark:border-neutral-600 dark:bg-neutral-800' 
-                                            : 'border-neutral-300 hover:bg-neutral-100 dark:border-neutral-700 dark:hover:bg-neutral-800'
-                                    }`}
-                                    aria-label={isVideoInBasket ? "Remove from basket" : "Add to basket"}
-                                >
-                                    {isVideoInBasket ? <BasketCheckIcon /> : <BasketAddIcon />}
-                                    <span>{isVideoInBasket ? 'In Basket' : 'Add to Basket'}</span>
-                                </button>
+             <div className="mt-6 flex gap-2">
+                <button 
+                  onClick={() => onToggleBasketItem(id)}
+                  className={`flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium transition-colors ${
+                    isVideoInBasket 
+                      ? 'border-neutral-400 bg-neutral-100 dark:border-neutral-600 dark:bg-neutral-800' 
+                      : 'border-neutral-300 hover:bg-neutral-100 dark:border-neutral-700 dark:hover:bg-neutral-800'
+                  }`}
+                  aria-label={isVideoInBasket ? "Remove from basket" : "Add to basket"}
+                >
+                  {isVideoInBasket ? <BasketCheckIcon /> : <BasketAddIcon />}
+                  <span>{isVideoInBasket ? 'In Basket' : 'Add to Basket'}</span>
+                </button>
+             </div>
+                         {/* JuicyAds 300x250 ad below Like/Add to Basket */}
+                         <div className="mt-4 flex justify-center">
+                           <div style={{ width: 300, height: 250 }}>
+                             <script type="text/javascript" data-cfasync="false" async src="https://poweredby.jads.co/js/jads.js"></script>
+                             <ins id="1104271" data-width="300" data-height="250"></ins>
+                             <script type="text/javascript" data-cfasync="false" async>{`(adsbyjuicy = window.adsbyjuicy || []).push({'adzone':1104271});`}</script>
+                           </div>
                          </div>
 
-             <div className="mt-8">
-                <AdSlot title="Ad Slot – 300x250" description="Vertical ad space" />
-                {/* JuicyAds 160x600 vertical banner (React) */}
-                <JuicyAdsVertical adzoneId={1104272} width={160} height={600} />
-             </div>
+         {/* Vertical ad removed as requested */}
         </div>
       </div>
 
 
       
+
+    {/* Horizontal ad above related videos */}
+    <div className="mt-12 px-4 sm:px-0">
+      <JuicyAdsHorizontal adzoneId={1104273} width={728} height={90} />
+    </div>
+
     {validRelated.length > 0 && (
       <div className="mt-12 border-t border-neutral-200 dark:border-neutral-800 pt-8">
         <VideoCarousel 
