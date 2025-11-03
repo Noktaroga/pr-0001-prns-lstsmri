@@ -14,7 +14,6 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { Video } from '../types';
 import { AdSlot } from './AdSlot';
-import JuicyAdsVertical from './JuicyAdsVertical';
 import JuicyAdsHorizontal from './JuicyAdsHorizontal';
 import { VideoCarousel } from './VideoCarousel';
 
@@ -68,6 +67,13 @@ const BasketCheckIcon = () => (
         <path d="M18 10h2a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2"></path>
         <path d="M14 18V6a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v12"></path>
         <polyline points="8 12 11 15 16 10"></polyline>
+    </svg>
+);
+
+const CloseIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
     </svg>
 );
 
@@ -142,13 +148,76 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
   const [newComment, setNewComment] = useState("");
   const videoRef = useRef<HTMLVideoElement>(null);
   const [adOverlayStep, setAdOverlayStep] = useState(1); // 1: first ad, 2: second ad, 0: none
+  const [adClicked, setAdClicked] = useState(false); // Estado para detectar click manual
+  const [adHidden, setAdHidden] = useState(false); // Estado para ocultar completamente el anuncio
+  const [showCloseButton, setShowCloseButton] = useState(false); // Estado para mostrar botón X
   
   const [currentQuality, setCurrentQuality] = useState(sources[0]?.quality || 'default');
         const [validSourceUrl, setValidSourceUrl] = useState<string | null>(null);
         // DEBUG: Log inicial de props video
         useEffect(() => {
             console.debug('[VideoDetail] video prop:', video);
+            console.debug('[VideoDetail] adOverlayStep inicial:', adOverlayStep);
         }, [video]);
+  
+  // Debug effect para el overlay
+  useEffect(() => {
+    console.log('[VideoDetail] adOverlayStep cambió a:', adOverlayStep, 'clicked:', adClicked, 'hidden:', adHidden, 'showClose:', showCloseButton);
+  }, [adOverlayStep, adClicked, adHidden, showCloseButton]);
+  
+  // Effect para mostrar el botón X después de 6 segundos
+  useEffect(() => {
+    if (adOverlayStep > 0 && !adHidden) {
+      setShowCloseButton(false); // Reset del botón
+      const timer = setTimeout(() => {
+        if (!adHidden && adOverlayStep > 0) {
+          console.log('[VideoDetail] Mostrando botón X después de 6 segundos');
+          setShowCloseButton(true);
+        }
+      }, 13000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [adOverlayStep, adHidden]);
+  
+  // Función para manejar el click en el anuncio
+  const handleAdClick = () => {
+    console.log('[VideoDetail] Click detectado en overlay del anuncio');
+    if (!adClicked) {
+      setAdClicked(true);
+      // Ocultar inmediatamente el overlay con transición
+      setAdHidden(true);
+      setShowCloseButton(false);
+      // Después de un breve delay, cambiar el estado del overlay y permitir reproducción
+      setTimeout(() => {
+        console.log('[VideoDetail] Desbloqueando video después del click');
+        setAdOverlayStep(0);
+        // Intentar reproducir el video automáticamente si el usuario lo tenía pausado
+        if (videoRef.current) {
+          videoRef.current.play().catch(error => 
+            console.log('[VideoDetail] Autoplay prevented:', error)
+          );
+        }
+      }, 300);
+    }
+  };
+  
+  // Función para cerrar el anuncio con el botón X
+  const handleCloseAd = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevenir que se active el click del anuncio
+    console.log('[VideoDetail] Cerrando anuncio con botón X');
+    handleAdClick(); // Reutilizar la misma lógica de cierre
+  };
+  
+  // Detector de clicks en anuncios - simplificado ya que solo se cierra con X
+  useEffect(() => {
+    if (adOverlayStep > 0 && !adHidden) {
+      // Reset del estado de click cuando cambia el overlay
+      setAdClicked(false);
+      console.log(`[VideoDetail] Overlay del anuncio activo - solo se puede cerrar con X después de 6 segundos`);
+    }
+  }, [adOverlayStep, adClicked, adHidden]);
+  
   const [isQualityMenuOpen, setQualityMenuOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const isVideoInBasket = basketItems.includes(id);
@@ -188,7 +257,7 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
 
     // Block play if ad overlay is visible
     const blockPlay = (e: Event) => {
-      if (adOverlayStep !== 0) {
+      if (adOverlayStep !== 0 && !adHidden) {
         e.preventDefault();
         videoElement.pause();
       }
@@ -205,7 +274,7 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
           localStorage.setItem(progressKey, String(videoElement.currentTime));
         }
     };
-  }, [id, adOverlayStep]);
+  }, [id, adOverlayStep, adHidden]);
 
   // Effect for fullscreen detection
   useEffect(() => {
@@ -345,36 +414,52 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
                       <source src={videoLinks[1]} type="video/mp4" />
                       Your browser does not support the video tag.
                     </video>
-                    {adOverlayStep === 1 && (
-                      <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/80">
-                        {/* JuicyAds v3.0 - Primer anuncio */}
+                    {adOverlayStep === 1 && !adHidden && (
+                      <div className={`absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/90 transition-opacity duration-300 ${adHidden ? 'opacity-0' : 'opacity-100'}`}>
+                        {/* JuicyAdsHorizontal - Primer anuncio con dimensiones exactas */}
                         <div
-                          id="juicy-ad-1104275"
-                          className="mb-4 flex items-center justify-center cursor-pointer"
-                          style={{ width: 308, height: 286, background: 'white', borderRadius: 12 }}
-                          onClick={() => setAdOverlayStep(2)}
+                          className="mb-4 flex items-center justify-center relative bg-white rounded-lg shadow-lg p-2"
+                          style={{ width: 328, height: 306 }}
                         >
-                          <script type="text/javascript" data-cfasync="false" async src="https://poweredby.jads.co/js/jads.js"></script>
-                          <ins id="1104275" data-width="308" data-height="286"></ins>
-                          <script type="text/javascript" data-cfasync="false" async>{`(adsbyjuicy = window.adsbyjuicy || []).push({'adzone':1104275});`}</script>
+                          <JuicyAdsHorizontal adzoneId={1104275} width={308} height={286} />
+                          {/* Botón X en la esquina superior derecha */}
+                          {showCloseButton && (
+                            <button
+                              className="absolute -top-2 -right-2 z-50 w-8 h-8 bg-red-600 hover:bg-red-700 text-white rounded-full flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-110"
+                              onClick={handleCloseAd}
+                              title="Cerrar anuncio"
+                            >
+                              <CloseIcon />
+                            </button>
+                          )}
                         </div>
-                        <div className="text-xs text-neutral-200 mt-2">Haz click en el anuncio para continuar</div>
+                        <div className="text-sm text-white mt-4 bg-black/50 px-4 py-2 rounded">
+                          🎬 Haz click en el anuncio y espera 5 segundos...
+                        </div>
                       </div>
                     )}
-                    {adOverlayStep === 2 && (
-                      <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/80">
-                        {/* JuicyAds v3.0 - Segundo anuncio (puedes cambiar el adzone si tienes otro) */}
+                    {adOverlayStep === 2 && !adHidden && (
+                      <div className={`absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/90 transition-opacity duration-300 ${adHidden ? 'opacity-0' : 'opacity-100'}`}>
+                        {/* JuicyAdsHorizontal - Segundo anuncio con dimensiones exactas */}
                         <div
-                          id="juicy-ad-1104276"
-                          className="mb-4 flex items-center justify-center cursor-pointer"
-                          style={{ width: 308, height: 286, background: 'white', borderRadius: 12 }}
-                          onClick={() => setAdOverlayStep(0)}
+                          className="mb-4 flex items-center justify-center relative bg-white rounded-lg shadow-lg p-2"
+                          style={{ width: 328, height: 306 }}
                         >
-                          <script type="text/javascript" data-cfasync="false" async src="https://poweredby.jads.co/js/jads.js"></script>
-                          <ins id="1104275" data-width="308" data-height="286"></ins>
-                          <script type="text/javascript" data-cfasync="false" async>{`(adsbyjuicy = window.adsbyjuicy || []).push({'adzone':1104275});`}</script>
+                          <JuicyAdsHorizontal adzoneId={1104275} width={308} height={286} />
+                          {/* Botón X en la esquina superior derecha */}
+                          {showCloseButton && (
+                            <button
+                              className="absolute -top-2 -right-2 z-50 w-8 h-8 bg-red-600 hover:bg-red-700 text-white rounded-full flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-110"
+                              onClick={handleCloseAd}
+                              title="Cerrar anuncio"
+                            >
+                              <CloseIcon />
+                            </button>
+                          )}
                         </div>
-                        <div className="text-xs text-neutral-200 mt-2">Haz click en el anuncio para desbloquear el video</div>
+                        <div className="text-sm text-white mt-4 bg-black/50 px-4 py-2 rounded">
+                          🎬 Esperando interacción con el anuncio...
+                        </div>
                       </div>
                     )}
                   </div>
@@ -435,11 +520,7 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
              </div>
                          {/* JuicyAds 300x250 ad below Like/Add to Basket */}
                          <div className="mt-4 flex justify-center">
-                           <div style={{ width: 300, height: 250 }}>
-                             <script type="text/javascript" data-cfasync="false" async src="https://poweredby.jads.co/js/jads.js"></script>
-                             <ins id="1104271" data-width="300" data-height="250"></ins>
-                             <script type="text/javascript" data-cfasync="false" async>{`(adsbyjuicy = window.adsbyjuicy || []).push({'adzone':1104271});`}</script>
-                           </div>
+                           <JuicyAdsHorizontal adzoneId={1104271} width={300} height={250} />
                          </div>
 
          {/* Vertical ad removed as requested */}

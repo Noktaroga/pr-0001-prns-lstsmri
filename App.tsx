@@ -1,19 +1,11 @@
 const BlackAdPlaceholderSquare: React.FC = () => (
   <div style={{ width: 250, height: 250, marginLeft: 32 }}>
-    {/* JuicyAds v3.0 */}
-    <script type="text/javascript" data-cfasync="false" async src="https://poweredby.jads.co/js/jads.js"></script>
-    <ins id="1104274" data-width="250" data-height="250"></ins>
-    <script type="text/javascript" data-cfasync="false" async>{`(adsbyjuicy = window.adsbyjuicy || []).push({'adzone':1104274});`}</script>
-    {/* JuicyAds END */}
+    <JuicyAdsHorizontal adzoneId={1104274} width={250} height={250} />
   </div>
 );
 const BlackAdPlaceholderLarge: React.FC = () => (
   <div style={{ width: 908, height: 258 }}>
-    {/* JuicyAds v3.0 */}
-    <script type="text/javascript" data-cfasync="false" async src="https://poweredby.jads.co/js/jads.js"></script>
-    <ins id="1104273" data-width="908" data-height="258"></ins>
-    <script type="text/javascript" data-cfasync="false" async>{`(adsbyjuicy = window.adsbyjuicy || []).push({'adzone':1104273});`}</script>
-    {/* JuicyAds END */}
+    <JuicyAdsHorizontal adzoneId={1104273} width={908} height={258} />
   </div>
 );
 import BlackAdPlaceholder from "./components/BlackAdPlaceholder";
