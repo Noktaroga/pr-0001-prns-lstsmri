@@ -24,54 +24,73 @@ jobs:
             script: |
               set -e
 
-              echo "[0] Esperando a que el backend esté completamente desplegado..."
-              # Esperar señal del backend o timeout después de 5 minutos
-              timeout=300
-              elapsed=0
-              while [ $elapsed -lt $timeout ]; do
-                if [ -f /tmp/backend-deploy-complete ]; then
-                  echo "Backend deployment detectado, continuando..."
-                  break
-                fi
-                if curl -s http://localhost:3001/health > /dev/null 2>&1 || curl -s http://localhost:3001 > /dev/null 2>&1; then
-                  echo "API del backend respondiendo, continuando..."
-                  break
-                fi
-                echo "Esperando backend... ($elapsed/$timeout segundos)"
-                sleep 10
-                elapsed=$((elapsed + 10))
-              done
-              
-              echo "[1] Preparando entorno Node..."
-              # IMPORTANTE: exportar el PATH donde vive node/npm/pm2 en tu VPS
+              # Configurar PATH para Node.js, npm y PM2
               export PATH=/root/.nvm/versions/node/v24.11.0/bin:$PATH
 
-              echo "[2] Actualizando repo frontend en el VPS..."
+              echo "[0] Gestionando backend durante deploy de frontend..."
+              
+              # Detener backend si está corriendo
+              echo "Deteniendo backend API..."
+              pm2 stop api || true
+              pm2 delete api || true
+              
+              # Liberar puerto 3001
+              echo "Liberando puerto 3001..."
+              if lsof -i:3001 > /dev/null 2>&1; then
+                lsof -ti:3001 | xargs kill -9 || true
+                sleep 2
+              fi
+
+              echo "[1] Actualizando frontend..."
               cd /var/app/frontend
               git pull origin main
 
-              echo "[3] Instalando dependencias..."
+              echo "[2] Instalando dependencias..."
               npm install
 
-              echo "[4] Construyendo build de producción..."
+              echo "[3] Construyendo build de producción..."
               npm run build
 
-              echo "[5] Revisando config de nginx..."
-              nginx -t
+              echo "[4] Reiniciando backend API..."
+              cd /var/app/backend
+              
+              # Verificar que el entorno virtual existe
+              if [ ! -d "venv" ]; then
+                echo "Entorno virtual no encontrado, creando..."
+                python3 -m venv venv --clear
+                source venv/bin/activate
+                pip install --upgrade pip
+                pip install -r requirements.txt
+              else
+                echo "Activando entorno virtual existente..."
+                source venv/bin/activate
+              fi
+              
+              # Reiniciar API con PM2
+              echo "Iniciando API con PM2..."
+              pm2 start app.py --name api --interpreter ./venv/bin/python3 --instances 1
+              pm2 save
+              
+              # Verificar que la API esté funcionando
+              echo "Verificando API..."
+              sleep 3
+              for i in {1..15}; do
+                if curl -s http://localhost:3001/health > /dev/null 2>&1; then
+                  echo "✓ Backend API funcionando correctamente"
+                  break
+                fi
+                echo "Esperando API... ($i/15)"
+                sleep 2
+              done
 
-              echo "[6] Recargando nginx..."
-              systemctl reload nginx
+              echo "[5] Recargando nginx..."
+              nginx -t && systemctl reload nginx
 
-              echo "[7] Verificando conectividad frontend-backend..."
-              sleep 5
-              # Test básico de conectividad
-              if curl -s http://localhost:3001 > /dev/null 2>&1; then
+              echo "[6] Verificación final..."
+              if curl -s http://localhost:3001/health > /dev/null 2>&1; then
                 echo "✓ Backend accesible desde frontend"
               else
-                echo "⚠ Warning: Backend no accesible, puede requerir intervención manual"
+                echo "⚠ Warning: Backend no responde, verificar manualmente"
               fi
 
-              echo "[8] Limpiando archivos temporales..."
-              rm -f /tmp/backend-deploy-complete
-
-              echo "[OK] Frontend actualizado y desplegado correctamente."
+              echo "[OK] Frontend y backend actualizados correctamente."
