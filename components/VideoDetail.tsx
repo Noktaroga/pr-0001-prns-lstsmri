@@ -16,6 +16,7 @@ import { Video } from '../types';
 import { AdSlot } from './AdSlot';
 import JuicyAdsHorizontal from './JuicyAdsHorizontal';
 import { VideoCarousel } from './VideoCarousel';
+import { trackAdClick } from '../utils/analytics';
 
 interface Comment {
     id: number;
@@ -107,6 +108,26 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
   // Asegura que sources siempre sea un array
   const { id, title, category, rating, total_votes, good_votes, bad_votes, duration } = video;
   const sources = Array.isArray(video.sources) && video.sources.length > 0 ? video.sources : [{ quality: 'default', url: '' }];
+  
+  // Agregar estilos CSS para la animación
+  React.useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes pulse {
+        0%, 100% {
+          border-color: rgba(255, 255, 255, 0.3);
+        }
+        50% {
+          border-color: rgba(255, 255, 255, 0.8);
+        }
+      }
+    `;
+    document.head.appendChild(style);
+    
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
   // Obtener URLs de video haciendo POST a /api/selenium-scrape
   const [videoLinks, setVideoLinks] = useState<string[]>([]);
   const [loadingLinks, setLoadingLinks] = useState(false);
@@ -151,34 +172,321 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
   const [adClicked, setAdClicked] = useState(false); // Estado para detectar click manual
   const [adHidden, setAdHidden] = useState(false); // Estado para ocultar completamente el anuncio
   const [showCloseButton, setShowCloseButton] = useState(false); // Estado para mostrar botón X
+  const [adBannerClicked, setAdBannerClicked] = useState(false); // Estado para detectar click específico en el banner del anuncio
+  const adContainerRef = useRef<HTMLDivElement>(null); // Ref para el contenedor del anuncio
+  const [xPosition, setXPosition] = useState({ top: '50%', left: '50%' }); // Posición de la X frontal
+  const [xPositionBack, setXPositionBack] = useState({ top: '50%', left: '50%' }); // Posición de la X trasera
+  const [xPositionClose, setXPositionClose] = useState({ top: '50%', left: '50%' }); // Posición de la X inferior
+  const [activeCloseButton, setActiveCloseButton] = useState(1); // Cuál X cierra el AD (1, 2, o 3)
   
   const [currentQuality, setCurrentQuality] = useState(sources[0]?.quality || 'default');
         const [validSourceUrl, setValidSourceUrl] = useState<string | null>(null);
+        
+        // Effect para resetear el estado del anuncio cada vez que cambia el video
+        useEffect(() => {
+            console.log('[VideoDetail] Nuevo video cargado, reseteando estado del anuncio para video ID:', id);
+            setAdOverlayStep(1); // Reiniciar al primer anuncio
+            setAdClicked(false); // Reset del estado de click
+            setAdHidden(false); // Mostrar anuncio nuevamente
+            setShowCloseButton(false); // Ocultar botón de cerrar
+            setAdBannerClicked(false); // Reset del estado de click en banner
+            
+            // Posiciones fijas centradas para ambas X - una al lado de la otra
+            setXPosition({
+                top: '50%', // Centrada verticalmente
+                left: '42%' // X frontal ligeramente a la izquierda del centro
+            });
+            
+            setXPositionBack({
+                top: '50%', // Centrada verticalmente  
+                left: '58%' // X trasera ligeramente a la derecha del centro
+            });
+            
+            // Tercera X centrada debajo de las otras dos (X que cierra el AD)
+            setXPositionClose({
+                top: '65%', // Debajo de las otras X
+                left: '50%' // Centrada horizontalmente
+            });
+            
+            // Seleccionar aleatoriamente cuál X será la que cierre el anuncio (1, 2, o 3)
+            const randomActiveButton = Math.floor(Math.random() * 3) + 1;
+            setActiveCloseButton(randomActiveButton);
+            
+            console.log('[VideoDetail] Posiciones de las 3 X aplicadas:');
+            console.log('- X1 (izquierda):', { top: '50%', left: '42%' });
+            console.log('- X2 (derecha):', { top: '50%', left: '58%' });
+            console.log('- X3 (abajo centro):', { top: '65%', left: '50%' });
+            console.log('- X activa para cerrar AD:', randomActiveButton);
+        }, [id]); // Se ejecuta cada vez que cambia el ID del video
+        
         // DEBUG: Log inicial de props video
         useEffect(() => {
             console.debug('[VideoDetail] video prop:', video);
             console.debug('[VideoDetail] adOverlayStep inicial:', adOverlayStep);
         }, [video]);
+        
+        // Effect para detectar cuando se carga el anuncio y buscar td colspan
+        useEffect(() => {
+            if (adOverlayStep > 0 && adContainerRef.current) {
+                let attempts = 0;
+                const maxAttempts = 15;
+                
+                const checkForTdColspan = () => {
+                    const container = adContainerRef.current;
+                    if (container) {
+                        // Buscar específicamente td con colspan="2"
+                        const tdColspan = container.querySelector('td[colspan="2"]');
+                        
+                        if (tdColspan) {
+                            console.log('[VideoDetail] ✅ td colspan="2" encontrado!');
+                            console.log('[VideoDetail] Contenido del td:', tdColspan.innerHTML);
+                            
+                            // Buscar el enlace dentro del td
+                            const link = tdColspan.querySelector('a[href]') as HTMLAnchorElement;
+                            if (link) {
+                                console.log('[VideoDetail] ✅ Enlace dentro del td encontrado:', link.href);
+                            }
+                        } else if (attempts < maxAttempts) {
+                            attempts++;
+                            console.log(`[VideoDetail] ⏳ Buscando td colspan... intento ${attempts}/${maxAttempts}`);
+                            
+                            // Log de estructura actual para debug
+                            if (attempts === 5) {
+                                console.log('[VideoDetail] 🔍 Estructura HTML actual:', container.innerHTML.substring(0, 500) + '...');
+                            }
+                            
+                            setTimeout(checkForTdColspan, 1000);
+                        } else {
+                            console.log('[VideoDetail] ❌ No se encontró td colspan después de múltiples intentos');
+                            console.log('[VideoDetail] 📋 HTML completo del contenedor:', container.innerHTML);
+                        }
+                    }
+                };
+                
+                // Empezar a verificar después de 2 segundos para dar tiempo al anuncio
+                setTimeout(checkForTdColspan, 2000);
+            }
+        }, [adOverlayStep]);
   
   // Debug effect para el overlay
   useEffect(() => {
-    console.log('[VideoDetail] adOverlayStep cambió a:', adOverlayStep, 'clicked:', adClicked, 'hidden:', adHidden, 'showClose:', showCloseButton);
-  }, [adOverlayStep, adClicked, adHidden, showCloseButton]);
+    console.log('[VideoDetail] Estado del anuncio - Step:', adOverlayStep, 'clicked:', adClicked, 'hidden:', adHidden, 'showClose:', showCloseButton, 'bannerClicked:', adBannerClicked);
+  }, [adOverlayStep, adClicked, adHidden, showCloseButton, adBannerClicked]);
   
-  // Effect para mostrar el botón X después de 6 segundos
+  // Efecto para detectar elementos del anuncio una vez cargado
   useEffect(() => {
-    if (adOverlayStep > 0 && !adHidden) {
+    if (adContainerRef.current && adOverlayStep === 1) {
+      let attempts = 0;
+      const maxAttempts = 20; // Aumentamos los intentos
+      
+      const checkForAdElements = () => {
+        attempts++;
+        console.log(`[VideoDetail] Intento ${attempts}/${maxAttempts} - Detectando estructura del anuncio...`);
+        
+        const container = adContainerRef.current;
+        if (!container) return;
+        
+        // Log de toda la estructura HTML del contenedor
+        console.log('[VideoDetail] 📋 Estructura HTML del contenedor:', container.innerHTML.substring(0, 500));
+        
+        // Buscar diferentes tipos de elementos
+        const elements = {
+          tdColspan: container.querySelectorAll('td[colspan]'),
+          allTds: container.querySelectorAll('td'),
+          iframes: container.querySelectorAll('iframe'),
+          links: container.querySelectorAll('a[href]'),
+          images: container.querySelectorAll('img'),
+          divs: container.querySelectorAll('div'),
+          scripts: container.querySelectorAll('script')
+        };
+        
+        console.log('[VideoDetail] 🔍 Elementos encontrados:');
+        console.log('- td[colspan]:', elements.tdColspan.length);
+        console.log('- td (total):', elements.allTds.length);
+        console.log('- iframes:', elements.iframes.length);
+        console.log('- enlaces:', elements.links.length);
+        console.log('- imágenes:', elements.images.length);
+        console.log('- divs:', elements.divs.length);
+        console.log('- scripts:', elements.scripts.length);
+        
+        // Revisar cada td para ver sus atributos
+        elements.allTds.forEach((td, index) => {
+          const tdElement = td as HTMLElement;
+          console.log(`[VideoDetail] TD ${index + 1}:`, {
+            colspan: tdElement.getAttribute('colspan'),
+            className: tdElement.className,
+            id: tdElement.id,
+            innerHTML: tdElement.innerHTML.substring(0, 100)
+          });
+        });
+        
+        // Revisar iframes
+        elements.iframes.forEach((iframe, index) => {
+          const iframeElement = iframe as HTMLIFrameElement;
+          console.log(`[VideoDetail] IFRAME ${index + 1}:`, {
+            src: iframeElement.src,
+            id: iframeElement.id,
+            className: iframeElement.className
+          });
+        });
+        
+        // Revisar enlaces
+        elements.links.forEach((link, index) => {
+          const linkElement = link as HTMLAnchorElement;
+          console.log(`[VideoDetail] LINK ${index + 1}:`, {
+            href: linkElement.href,
+            target: linkElement.target,
+            className: linkElement.className
+          });
+        });
+        
+        // Continuar buscando si no hemos agotado los intentos
+        if (attempts < maxAttempts && 
+            (elements.tdColspan.length === 0 && elements.allTds.length === 0 && elements.iframes.length === 0)) {
+          setTimeout(checkForAdElements, 1000); // Aumentamos el intervalo
+        } else {
+          console.log('[VideoDetail] ✅ Detección completada o límite alcanzado');
+        }
+      };
+      
+      // Iniciar la detección después de un pequeño delay
+      setTimeout(checkForAdElements, 2000); // Aumentamos el delay inicial
+    }
+  }, [adOverlayStep]); // Ejecutar cuando cambie el step del overlay
+  
+  // Effect para mostrar el botón X después de 12 segundos Y solo si se hizo clic en el banner
+  useEffect(() => {
+    if (adOverlayStep > 0 && !adHidden && adBannerClicked) {
       setShowCloseButton(false); // Reset del botón
       const timer = setTimeout(() => {
-        if (!adHidden && adOverlayStep > 0) {
-          console.log('[VideoDetail] Mostrando botón X después de 6 segundos');
+        if (!adHidden && adOverlayStep > 0 && adBannerClicked) {
+          console.log('[VideoDetail] Mostrando botón X después de 12 segundos Y click en banner');
           setShowCloseButton(true);
         }
-      }, 13000);
+      }, 5000); // 5 segundos después del click en el banner
       
       return () => clearTimeout(timer);
     }
-  }, [adOverlayStep, adHidden]);
+  }, [adOverlayStep, adHidden, adBannerClicked]);
+  
+  // Función para manejar clicks en las X (solo una cierra el anuncio)
+  const handleXClick = (buttonNumber: number) => {
+    if (buttonNumber === activeCloseButton) {
+      // Esta es la X que cierra el anuncio
+      console.log(`[VideoDetail] X${buttonNumber} es la correcta - cerrando anuncio`);
+      trackAdClick(`close-button-${buttonNumber}`);
+      handleAdClick(); // Llamar directamente a la función que cierra el anuncio
+    } else {
+      // Esta X abre el anuncio como las otras
+      console.log(`[VideoDetail] X${buttonNumber} es falsa - abriendo anuncio`);
+      trackAdClick(`fake-close-button-${buttonNumber}`);
+      handleAdBannerClick({ preventDefault: () => {}, stopPropagation: () => {}, currentTarget: null } as any);
+    }
+  };
+  
+  // Función para manejar el click en la X central (que abre el anuncio)
+  const handleAdBannerClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log('[VideoDetail] Click detectado en X central del anuncio...');
+    
+    if (!adBannerClicked && adContainerRef.current) {
+      console.log('[VideoDetail] Registrando click y buscando elemento de anuncio...');
+      setAdBannerClicked(true);
+      
+      // Función para buscar en un elemento (incluyendo iframes)
+      const searchInElement = (element: Element): HTMLElement | null => {
+        // Buscar td colspan="2" directamente
+        let tdElement = element.querySelector('td[colspan="2"]') as HTMLElement;
+        if (tdElement) return tdElement;
+        
+        // Buscar en iframes
+        const iframes = element.querySelectorAll('iframe');
+        for (const iframe of iframes) {
+          try {
+            if (iframe.contentDocument || iframe.contentWindow) {
+              const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+              if (iframeDoc) {
+                tdElement = iframeDoc.querySelector('td[colspan="2"]') as HTMLElement;
+                if (tdElement) return tdElement;
+              }
+            }
+          } catch (error) {
+            console.log('[VideoDetail] No se puede acceder al iframe (cross-origin):', error);
+          }
+        }
+        
+        return null;
+      };
+      
+      // Buscar en el contenedor principal
+      let targetElement = searchInElement(adContainerRef.current!);
+      
+      if (targetElement) {
+        console.log('[VideoDetail] ✅ Elemento td colspan="2" encontrado!', targetElement);
+        
+        // Buscar el enlace dentro del td
+        const linkElement = targetElement.querySelector('a[href]') as HTMLAnchorElement;
+        
+        if (linkElement) {
+          console.log('[VideoDetail] ✅ Enlace encontrado dentro del td:', linkElement.href);
+          console.log('[VideoDetail] 🎯 Abriendo enlace del anuncio...');
+          
+          // Abrir el enlace en una nueva pestaña
+          window.open(linkElement.href, '_blank');
+          
+        } else {
+          console.log('[VideoDetail] 🎯 No se encontró enlace, haciendo click directo en td...');
+          targetElement.click();
+        }
+        
+      } else {
+        console.log('[VideoDetail] ❌ No se encontró elemento td colspan="2"');
+        console.log('[VideoDetail] 🔍 Intentando buscar elementos alternativos...');
+        
+        // Búsqueda más amplia de elementos clickeables
+        const alternatives = [
+          adContainerRef.current?.querySelector('a[href*="juicyads"]'),
+          adContainerRef.current?.querySelector('a[href*="getjuicy"]'),
+          adContainerRef.current?.querySelector('a[target="_blank"]'),
+          adContainerRef.current?.querySelector('img[alt]'),
+          adContainerRef.current?.querySelector('td'),
+          adContainerRef.current?.querySelector('a[href]'),
+          // Buscar elementos que contengan enlaces de JuicyAds
+          ...Array.from(adContainerRef.current?.querySelectorAll('*') || []).filter(el => {
+            const element = el as HTMLElement;
+            return element.innerHTML?.includes('juicyads') || 
+                   element.innerHTML?.includes('getjuicy') ||
+                   element.onclick !== null;
+          })
+        ].filter(Boolean);
+        
+        console.log('[VideoDetail] 📋 Elementos alternativos encontrados:', alternatives.length);
+        
+        for (let i = 0; i < alternatives.length; i++) {
+          const element = alternatives[i] as HTMLElement;
+          if (element) {
+            console.log(`[VideoDetail] 🔄 Probando alternativa ${i + 1}:`, element.tagName, element.className, element.id);
+            
+            // Intentar abrir enlace
+            if (element.tagName === 'A') {
+              const link = element as HTMLAnchorElement;
+              console.log('[VideoDetail] 🎯 Abriendo enlace:', link.href);
+              window.open(link.href, '_blank');
+              break;
+            } else if (element.onclick || element.addEventListener) {
+              console.log('[VideoDetail] 🎯 Haciendo click en elemento con evento');
+              element.click();
+              break;
+            }
+          }
+        }
+      }
+      
+      // Feedback visual - hacer que la X se vea presionada
+      // (Código de animación removido para mantener X estática)
+    }
+  };
   
   // Función para manejar el click en el anuncio
   const handleAdClick = () => {
@@ -202,19 +510,26 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
     }
   };
   
-  // Función para cerrar el anuncio con el botón X
+  // Función para cerrar el anuncio con el botón X (solo funciona si se clickeó el banner)
   const handleCloseAd = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevenir que se active el click del anuncio
-    console.log('[VideoDetail] Cerrando anuncio con botón X');
-    handleAdClick(); // Reutilizar la misma lógica de cierre
+    console.log('[VideoDetail] Intentando cerrar anuncio con botón X');
+    
+    if (adBannerClicked) {
+      console.log('[VideoDetail] Banner fue clickeado previamente, cerrando anuncio');
+      handleAdClick(); // Reutilizar la misma lógica de cierre
+    } else {
+      console.log('[VideoDetail] Banner NO fue clickeado, no se puede cerrar aún');
+      // Opcional: mostrar un mensaje temporal al usuario
+    }
   };
   
-  // Detector de clicks en anuncios - simplificado ya que solo se cierra con X
+  // Detector de clicks en anuncios - requiere click en banner primero
   useEffect(() => {
     if (adOverlayStep > 0 && !adHidden) {
       // Reset del estado de click cuando cambia el overlay
       setAdClicked(false);
-      console.log(`[VideoDetail] Overlay del anuncio activo - solo se puede cerrar con X después de 6 segundos`);
+      console.log(`[VideoDetail] Overlay del anuncio activo - DEBE hacer click en banner primero, luego esperar 12 segundos para el botón X`);
     }
   }, [adOverlayStep, adClicked, adHidden]);
   
@@ -414,14 +729,67 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
                       <source src={videoLinks[1]} type="video/mp4" />
                       Your browser does not support the video tag.
                     </video>
-                    {adOverlayStep === 1 && !adHidden && (
-                      <div className={`absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/90 transition-opacity duration-300 ${adHidden ? 'opacity-0' : 'opacity-100'}`}>
+                    {adOverlayStep > 0 && !adHidden && (
+                      <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/90">
                         {/* JuicyAdsHorizontal - Primer anuncio con dimensiones exactas */}
                         <div
-                          className="mb-4 flex items-center justify-center relative bg-white rounded-lg shadow-lg p-2"
+                          ref={adContainerRef}
+                          className="mb-4 flex items-center justify-center relative rounded-lg p-2 transition-all duration-200"
                           style={{ width: 328, height: 306 }}
+                          title={adBannerClicked ? "¡Banner clickeado! Espera 12 segundos..." : "Haz click en el anuncio para continuar"}
                         >
-                          <JuicyAdsHorizontal adzoneId={1104275} width={308} height={286} />
+                          {/* Anuncio real en la capa más baja */}
+                          <div 
+                            className="relative z-10"
+                            style={{ 
+                              opacity: adBannerClicked ? 1 : 0.85 // Semi-transparente
+                            }}
+                          >
+                            <JuicyAdsHorizontal adzoneId={1104275} width={308} height={286} />
+                          </div>
+
+                          {/* X FALSA #1 - Esquina superior izquierda */}
+                          <button
+                            className="absolute top-2 left-2 z-50 w-10 h-10 bg-red-600 hover:bg-red-700 text-white rounded-full flex items-center justify-center shadow-xl transition-all duration-200 hover:scale-110 cursor-pointer"
+                            onClick={handleAdBannerClick}
+                            title="Cerrar anuncio"
+                            style={{
+                              fontSize: '16px',
+                              fontWeight: 'bold',
+                              textShadow: '1px 1px 2px rgba(0,0,0,0.5)'
+                            }}
+                          >
+                            ✕
+                          </button>
+                          
+                          {/* X FALSA #2 - Esquina superior derecha */}
+                          <button
+                            className="absolute top-2 right-2 z-50 w-10 h-10 bg-red-600 hover:bg-red-700 text-white rounded-full flex items-center justify-center shadow-xl transition-all duration-200 hover:scale-110 cursor-pointer"
+                            onClick={handleAdBannerClick}
+                            title="Cerrar anuncio"
+                            style={{
+                              fontSize: '16px',
+                              fontWeight: 'bold',
+                              textShadow: '1px 1px 2px rgba(0,0,0,0.5)'
+                            }}
+                          >
+                            ✕
+                          </button>
+                          
+                          {/* X FALSA #3 - Centro del anuncio */}
+                          <button
+                            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 w-14 h-14 bg-red-600 hover:bg-red-700 text-white rounded-full flex items-center justify-center shadow-xl transition-all duration-200 hover:scale-110 cursor-pointer"
+                            onClick={handleAdBannerClick}
+                            title="¡CERRAR AHORA!"
+                            style={{
+                              fontSize: '20px',
+                              fontWeight: 'bold',
+                              textShadow: '1px 1px 2px rgba(0,0,0,0.5)'
+                            }}
+                          >
+                            ✕
+                          </button>
+                          
                           {/* Botón X en la esquina superior derecha */}
                           {showCloseButton && (
                             <button
@@ -434,18 +802,98 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
                           )}
                         </div>
                         <div className="text-sm text-white mt-4 bg-black/50 px-4 py-2 rounded">
-                          🎬 Haz click en el anuncio y espera 5 segundos...
+                          {adBannerClicked 
+                            ? "✅ ¡Anuncio abierto! Espera 12 segundos para el botón de cerrar..."
+                            : "� Haz click en la X para cerrar el anuncio"
+                          }
                         </div>
                       </div>
                     )}
-                    {adOverlayStep === 2 && !adHidden && (
-                      <div className={`absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/90 transition-opacity duration-300 ${adHidden ? 'opacity-0' : 'opacity-100'}`}>
-                        {/* JuicyAdsHorizontal - Segundo anuncio con dimensiones exactas */}
+                    
+                    {adOverlayStep > 0 && !adHidden && (
+                      <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/90">
+
                         <div
-                          className="mb-4 flex items-center justify-center relative bg-white rounded-lg shadow-lg p-2"
+                          className="mb-4 flex items-center justify-center relative rounded-lg p-2 transition-all duration-200"
                           style={{ width: 328, height: 306 }}
                         >
-                          <JuicyAdsHorizontal adzoneId={1104275} width={308} height={286} />
+                          {/* X trasera - z-index dinámico según funcionalidad */}
+                          {!adBannerClicked && (
+                            <div 
+                              className={`absolute inset-0 pointer-events-none ${activeCloseButton === 1 ? 'z-30' : 'z-5'}`}
+                            >
+                              <button
+                                className="absolute w-16 h-16 bg-red-600 text-white rounded-full flex items-center justify-center shadow-xl cursor-pointer pointer-events-auto transform -translate-x-1/2 -translate-y-1/2"
+                                onClick={() => handleXClick(1)}
+                                style={{
+                                  fontSize: '24px',
+                                  fontWeight: 'bold',
+                                  textShadow: '1px 1px 2px rgba(0,0,0,0.5)',
+                                  opacity: activeCloseButton === 1 ? 0.2 : 0.7, // X verdadera menos visible
+                                  top: xPositionBack.top,
+                                  left: xPositionBack.left
+                                }}
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          )}
+
+                          {/* Anuncio real POR DETRÁS - 50% transparente y CLICKEABLE */}
+                          <div 
+                            className="relative z-10 cursor-pointer"
+                            style={{ 
+                              opacity: adBannerClicked ? 1 : 0.6 // 50% transparente hasta que se haga click
+                            }}
+                            onClick={handleAdBannerClick}
+                          >
+                            <JuicyAdsHorizontal adzoneId={1104275} width={308} height={286} />
+                          </div>
+                          
+                          {/* X frontal - z-index dinámico según funcionalidad */}
+                          {!adBannerClicked && (
+                            <div 
+                              className={`absolute inset-0 pointer-events-none ${activeCloseButton === 2 ? 'z-30' : 'z-5'}`}
+                            >
+                              <button
+                                className="absolute w-16 h-16 bg-red-600 text-white rounded-full flex items-center justify-center shadow-xl cursor-pointer pointer-events-auto transform -translate-x-1/2 -translate-y-1/2"
+                                onClick={() => handleXClick(2)}
+                                style={{
+                                  fontSize: '24px',
+                                  fontWeight: 'bold',
+                                  textShadow: '1px 1px 2px rgba(0,0,0,0.5)',
+                                  opacity: activeCloseButton === 2 ? 0.3 : 0.7, // X verdadera menos visible
+                                  top: xPosition.top,
+                                  left: xPosition.left
+                                }}
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          )}
+                          
+                          {/* X tercera - z-index dinámico según funcionalidad */}
+                          {!adBannerClicked && (
+                            <div 
+                              className={`absolute inset-0 pointer-events-none ${activeCloseButton === 3 ? 'z-30' : 'z-5'}`}
+                            >
+                              <button
+                                className="absolute w-16 h-16 bg-red-600 text-white rounded-full flex items-center justify-center shadow-xl cursor-pointer pointer-events-auto transform -translate-x-1/2 -translate-y-1/2"
+                                onClick={() => handleXClick(3)}
+                                style={{
+                                  fontSize: '24px',
+                                  fontWeight: 'bold',
+                                  textShadow: '1px 1px 2px rgba(0,0,0,0.5)',
+                                  opacity: activeCloseButton === 3 ? 0.3 : 0.7, // X verdadera menos visible
+                                  top: xPositionClose.top,
+                                  left: xPositionClose.left
+                                }}
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          )}
+                          
                           {/* Botón X en la esquina superior derecha */}
                           {showCloseButton && (
                             <button
@@ -458,7 +906,10 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
                           )}
                         </div>
                         <div className="text-sm text-white mt-4 bg-black/50 px-4 py-2 rounded">
-                          🎬 Esperando interacción con el anuncio...
+                          {adBannerClicked 
+                            ? "✅ ¡Anuncio abierto! Espera 12 segundos para el botón de cerrar..."
+                            : "❌ Haz click en las tres X para cerrar el anuncio"
+                          }
                         </div>
                       </div>
                     )}

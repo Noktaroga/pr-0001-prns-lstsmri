@@ -10,6 +10,7 @@ const BlackAdPlaceholderLarge: React.FC = () => (
 );
 import BlackAdPlaceholder from "./components/BlackAdPlaceholder";
 import React, { useMemo, useState, useEffect } from "react";
+import { initGA, trackPageView, trackVideoPlay, trackCategorySelect, trackSearch } from "./utils/analytics";
 import { Header } from "./components/Header";
 import { Sidebar } from "./components/Sidebar";
 import { Footer } from "./components/Footer";
@@ -38,8 +39,14 @@ type DurationFilter = 'all' | 'tiny' | 'short' | 'long';
 const PAGE_SIZE = 36;
 
 import { VideoDetail } from "./components/VideoDetail";
+import { LiveStats } from "./components/LiveStats";
 
 const App: React.FC = () => {
+  // Inicializar Google Analytics
+  useEffect(() => {
+    initGA();
+  }, []);
+
   const [videos, setVideos] = useState<Video[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [query, setQuery] = useState('');
@@ -260,6 +267,10 @@ const App: React.FC = () => {
     window.scrollTo(0, 0);
     // Push video ID to URL
     window.history.pushState({ videoId: video.id }, '', `?video=${video.id}`);
+    
+    // Rastrear visualización de video
+    trackVideoPlay(video.id, video.title);
+    trackPageView(`Video: ${video.title}`, window.location.href);
   };
 
   // Handle browser navigation (back/forward)
@@ -299,6 +310,9 @@ const App: React.FC = () => {
       params.delete('video');
       window.history.replaceState({}, '', `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`);
     }
+    
+    // Rastrear selección de categoría
+    trackCategorySelect(category);
   };
   
   const handleViewChange = (view: 'home' | 'videos') => {
@@ -318,6 +332,9 @@ const App: React.FC = () => {
       newPath = '/Home';
       window.history.replaceState({}, '', newPath);
     }
+    
+    // Rastrear cambio de vista
+    trackPageView(view === 'home' ? 'Home' : 'Videos', window.location.href);
   };
 
   // ---------------------------
@@ -581,6 +598,9 @@ const App: React.FC = () => {
           </div>
         </div>
       )}
+      
+      {/* Componente de estadísticas en tiempo real */}
+      <LiveStats />
     </div>
   );
 }

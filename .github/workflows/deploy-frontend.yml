@@ -8,6 +8,8 @@ on:
 jobs:
   deploy-frontend:
     runs-on: ubuntu-latest
+    # Esperar a que termine el backend si ambos se ejecutan
+    needs: []
 
     steps:
       - name: Checkout repository
@@ -22,24 +24,27 @@ jobs:
             script: |
               set -e
 
-              echo "[0] Preparando entorno Node..."
+              echo "[0] Esperando 30 segundos para evitar conflictos con backend..."
+              sleep 30
+              
+              echo "[1] Preparando entorno Node..."
               # IMPORTANTE: exportar el PATH donde vive node/npm/pm2 en tu VPS
               export PATH=/root/.nvm/versions/node/v24.11.0/bin:$PATH
 
-              echo "[1] Actualizando repo frontend en el VPS..."
+              echo "[2] Actualizando repo frontend en el VPS..."
               cd /var/app/frontend
               git pull origin main
 
-              echo "[2] Instalando dependencias..."
+              echo "[3] Instalando dependencias..."
               npm install
 
-              echo "[3] Construyendo build de producción..."
+              echo "[4] Construyendo build de producción..."
               npm run build
 
-              echo "[4] Revisando config de nginx..."
+              echo "[5] Revisando config de nginx..."
               nginx -t
 
-              echo "[5] Recargando nginx..."
+              echo "[6] Recargando nginx..."
               systemctl reload nginx
 
               echo "[OK] Frontend actualizado y desplegado."

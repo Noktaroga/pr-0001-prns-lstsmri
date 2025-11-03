@@ -1,4 +1,5 @@
 import React from 'react';
+import { trackSearch } from '../utils/analytics';
 
 interface HeaderProps {
   onToggleSidebar: () => void;
@@ -30,6 +31,14 @@ const BasketIcon = () => (
 
 export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, query, setQuery, activeView, onViewChange, basketItemCount, onToggleBasket }) => {
   const [lang, setLang] = React.useState<'ES' | 'EN'>('ES');
+
+  // Manejar búsqueda con tracking
+  const handleSearchChange = (value: string) => {
+    setQuery(value);
+    if (value.length > 2) { // Solo trackear búsquedas con más de 2 caracteres
+      trackSearch(value);
+    }
+  };
 
   const navButtonClasses = "rounded-md px-3 py-2 text-sm font-medium transition-colors";
   const activeNavButtonClasses = "bg-neutral-100 dark:bg-neutral-800";
@@ -124,7 +133,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, query, setQuery
           <span className="sr-only">Search</span>
           <input
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => handleSearchChange(e.target.value)}
             placeholder="Search…"
             className="w-56 rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm outline-none ring-0 placeholder:text-neutral-400 hover:border-neutral-400 focus:border-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:placeholder:text-neutral-500 dark:focus:border-white"
           />
