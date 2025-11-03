@@ -120,7 +120,7 @@ export const Home: React.FC<HomeProps> = ({ videos, onVideoSelect, basketItems, 
     let recommendedVideos = selectVideosByCategory(sortedByRec, maxPerCatRec, 9);
 
     return (
-        <main className="pt-6">
+        <main className="pt-6 pb-0">
             {featuredVideos.length > 0 && 
                 <HeroSlider 
                     videos={featuredVideos} 

@@ -13,7 +13,7 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
   categories,
 }) => {
   return (
-    <div className="sticky top-16 z-30 w-full border-b border-neutral-200/60 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:border-neutral-800 dark:bg-neutral-900/60">
+    <div className="sticky top-16 z-30 w-full border-b border-neutral-800 bg-neutral-900/60 backdrop-blur">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div
           className="flex items-center gap-3 py-2 overflow-x-auto no-scrollbar"
@@ -28,8 +28,8 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
               onClick={() => setActiveCat(c.value)}
               className={`rounded-full border px-3 py-1 text-sm transition-all whitespace-nowrap ${
                 activeCat === c.value
-                  ? "border-neutral-900 bg-neutral-900 text-white dark:border-white dark:bg-white dark:text-neutral-900"
-                  : "border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                  ? "border-white bg-white text-neutral-900"
+                  : "border-neutral-700 hover:bg-neutral-800"
               }`}
             >
               {c.label}

@@ -9,7 +9,7 @@ interface AdSlotProps {
 export const AdSlot: React.FC<AdSlotProps> = ({ title, description }) => {
   return (
     <div
-      className="grid min-h-[160px] place-items-center rounded-xl border-2 border-dashed border-neutral-300 p-4 text-center text-sm text-neutral-500 dark:border-neutral-700 dark:text-neutral-400"
+      className="grid min-h-[160px] place-items-center rounded-xl border-2 border-dashed border-neutral-700 p-4 text-center text-sm text-neutral-400"
       role="note"
       aria-label="Ad slot"
     >

@@ -49,17 +49,27 @@ const VideoPlayerMultiplayer: React.FC<{ video: Video }> = ({ video }) => {
   }, [video.page_url, video.id]);
 
   return (
-    <div style={{ width: '100%', height: '100%' }}>
+    <div style={{ width: '100%', height: '100%', background: '#0a0a0a' }}>
       {loadingLinks ? (
-        <div style={{ color: 'white', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Cargando…</div>
+        <div className="w-full h-full flex items-center justify-center text-neutral-100 bg-neutral-950">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-neutral-100 mb-2"></div>
+            <p>Cargando video...</p>
+          </div>
+        </div>
       ) : fetchError ? (
-        <div style={{ color: 'red', textAlign: 'center', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{fetchError}</div>
+        <div className="w-full h-full flex items-center justify-center text-red-400 bg-neutral-950">
+          <div className="text-center p-4">
+            <p className="text-sm">{fetchError}</p>
+            <p className="text-xs opacity-70 mt-2">Error al cargar el video</p>
+          </div>
+        </div>
       ) : videoLinks.length > 0 ? (
         <video
           ref={videoRef}
           key={videoLinks[videoLinks.length - 1] || 'no-link'}
           controls
-          style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 0, background: 'black', display: 'block' }}
+          style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 0, background: '#0a0a0a', display: 'block' }}
           crossOrigin="anonymous"
           poster={video.thumbnail}
         >
@@ -67,7 +77,12 @@ const VideoPlayerMultiplayer: React.FC<{ video: Video }> = ({ video }) => {
           Your browser does not support the video tag.
         </video>
       ) : (
-        <div style={{ color: 'white', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>No se encontraron enlaces de video.</div>
+        <div className="w-full h-full flex items-center justify-center text-neutral-100 bg-neutral-950">
+          <div className="text-center p-4">
+            <p className="text-sm">No se encontraron enlaces</p>
+            <p className="text-xs opacity-70 mt-2">Video no disponible</p>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -134,15 +149,16 @@ export const BasketMultiplayer: React.FC<BasketMultiplayerProps> = ({ onClose, v
         left: 0,
         width: '100vw',
         height: '100vh',
-        background: 'black',
+        background: '#0a0a0a',
         zIndex: 9999,
       }}
+      className="transition-all duration-300"
       aria-modal="true"
       role="dialog"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {/* Líneas blancas vertical y horizontal */}
+      {/* Líneas divisorias con efecto neon */}
       <div
         style={{
           position: 'absolute',
@@ -150,8 +166,9 @@ export const BasketMultiplayer: React.FC<BasketMultiplayerProps> = ({ onClose, v
           left: '50%',
           width: 2,
           height: '100%',
-          background: 'white',
+          background: '#ff2d55',
           transform: 'translateX(-1px)',
+          boxShadow: '0 0 10px #ff2d55, 0 0 20px #ff2d55, 0 0 40px #ff2d55',
         }}
       />
       <div
@@ -161,8 +178,9 @@ export const BasketMultiplayer: React.FC<BasketMultiplayerProps> = ({ onClose, v
           top: '50%',
           width: '100%',
           height: 2,
-          background: 'white',
+          background: '#ff2d55',
           transform: 'translateY(-1px)',
+          boxShadow: '0 0 10px #ff2d55, 0 0 20px #ff2d55, 0 0 40px #ff2d55',
         }}
       />
 
@@ -187,59 +205,81 @@ export const BasketMultiplayer: React.FC<BasketMultiplayerProps> = ({ onClose, v
           </div>
         ))
       ) : (
-        // Si no hay 4 videos, mostrar las X blancas como antes
-        <svg
-          width={windowSize.width}
-          height={windowSize.height}
-          style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }}
-        >
-          {quadrants.map((q, idx) => (
-            <g key={idx}>
-              <line
-                x1={q.center.x - 24}
-                y1={q.center.y - 24}
-                x2={q.center.x + 24}
-                y2={q.center.y + 24}
-                stroke="white"
-                strokeWidth={4}
-                strokeLinecap="round"
-              />
-              <line
-                x1={q.center.x + 24}
-                y1={q.center.y - 24}
-                x2={q.center.x - 24}
-                y2={q.center.y + 24}
-                stroke="white"
-                strokeWidth={4}
-                strokeLinecap="round"
-              />
-            </g>
-          ))}
-        </svg>
+        // Si no hay 4 videos, mostrar las X con efecto neon
+        <div className="w-full h-full flex items-center justify-center">
+          <svg
+            width={windowSize.width}
+            height={windowSize.height}
+            style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }}
+          >
+            <defs>
+              <filter id="neonGlow" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                <feMerge> 
+                  <feMergeNode in="coloredBlur"/>
+                  <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+              </filter>
+            </defs>
+            {quadrants.map((q, idx) => (
+              <g key={idx}>
+                <line
+                  x1={q.center.x - 32}
+                  y1={q.center.y - 32}
+                  x2={q.center.x + 32}
+                  y2={q.center.y + 32}
+                  stroke="#ff2d55"
+                  strokeWidth={4}
+                  strokeLinecap="round"
+                  filter="url(#neonGlow)"
+                  style={{ 
+                    filter: 'drop-shadow(0 0 10px #ff2d55) drop-shadow(0 0 20px #ff2d55)',
+                  }}
+                />
+                <line
+                  x1={q.center.x + 32}
+                  y1={q.center.y - 32}
+                  x2={q.center.x - 32}
+                  y2={q.center.y + 32}
+                  stroke="#ff2d55"
+                  strokeWidth={4}
+                  strokeLinecap="round"
+                  filter="url(#neonGlow)"
+                  style={{ 
+                    filter: 'drop-shadow(0 0 10px #ff2d55) drop-shadow(0 0 20px #ff2d55)',
+                  }}
+                />
+                {/* Texto indicativo */}
+                <text
+                  x={q.center.x}
+                  y={q.center.y + 60}
+                  textAnchor="middle"
+                  fill="#ff2d55"
+                  fontSize="14"
+                  fontWeight="bold"
+                  style={{ 
+                    filter: 'drop-shadow(0 0 5px #ff2d55)',
+                    textShadow: '0 0 10px #ff2d55',
+                  }}
+                >
+                  Agrega más videos
+                </text>
+              </g>
+            ))}
+          </svg>
+        </div>
       )}
 
       <button
         onClick={onClose}
+        className="absolute top-6 right-6 w-10 h-10 bg-neutral-900 text-white border-2 border-red-500 rounded-full flex items-center justify-center font-bold cursor-pointer text-xl transition-all duration-300 hover:bg-red-500/20 hover:text-red-400"
         style={{
-          position: 'absolute',
-          top: 24,
-          right: 24,
-          background: 'white',
-          color: 'black',
-          border: 'none',
-          borderRadius: '50%',
-          width: 40,
-          height: 40,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontWeight: 'bold',
-          cursor: 'pointer',
-          fontSize: 24,
           zIndex: 10000,
           opacity: hovered ? 1 : 0,
-          transition: 'opacity 0.2s',
+          transition: 'opacity 0.2s, all 0.3s',
           pointerEvents: hovered ? 'auto' : 'none',
+          boxShadow: '0 0 10px #ff2d55, 0 0 20px #ff2d55',
+          filter: 'drop-shadow(0 0 5px #ff2d55)',
         }}
         aria-label="Cerrar Basket Multiplayer"
       >

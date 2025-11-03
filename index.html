@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
   <head>
     <meta name="juicyads-site-verification" content="95f7d229c9e280700e571cc144e56fa9">
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="color-scheme" content="dark" />
     <title>PORNSTERS</title>
     <link rel="icon" type="image/png" href="/mini.png" sizes="32x32" />
     
@@ -28,6 +29,32 @@
 }
 </script>
 <style>
+  /* CSS Reset for html and body */
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background-color: #0a0a0a !important;
+    color: #fafafa !important;
+  }
+  
+  /* Force dark mode */
+  html {
+    color-scheme: dark !important;
+  }
+  
+  #root {
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    background-color: #0a0a0a !important;
+  }
+  
+  /* Force all elements to respect dark theme */
+  * {
+    color-scheme: dark !important;
+  }
+  
   @keyframes fadeInUp {
     from {
       opacity: 0;

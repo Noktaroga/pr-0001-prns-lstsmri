@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { Video } from '../types';
 import { VideoCard } from './VideoCard';
@@ -21,7 +21,41 @@ export const VirtualizedVideoGrid: React.FC<VirtualizedVideoGridProps> = ({
 	rowHeight = 340,
 }) => {
 	const parentRef = useRef<HTMLDivElement>(null);
-	const rowCount = Math.ceil(videos.length / columns);
+	
+	// Estado para el número de columnas responsivo
+	const [responsiveColumns, setResponsiveColumns] = useState(columns);
+
+	// Función para calcular columnas basado en el ancho de pantalla
+	const getResponsiveColumns = () => {
+		const width = window.innerWidth;
+		if (width < 640) { // sm breakpoint
+			return Math.min(3, columns); // Máximo 3 columnas en móvil
+		} else if (width < 768) { // md breakpoint
+			return Math.min(4, columns);
+		} else if (width < 1024) { // lg breakpoint
+			return Math.min(5, columns);
+		} else {
+			return columns; // Usar columnas originales en desktop
+		}
+	};
+
+	// Efecto para manejar el resize de la ventana
+	useEffect(() => {
+		const handleResize = () => {
+			setResponsiveColumns(getResponsiveColumns());
+		};
+
+		// Establecer columnas iniciales
+		setResponsiveColumns(getResponsiveColumns());
+
+		// Agregar listener para resize
+		window.addEventListener('resize', handleResize);
+		
+		// Cleanup
+		return () => window.removeEventListener('resize', handleResize);
+	}, [columns]);
+
+	const rowCount = Math.ceil(videos.length / responsiveColumns);
 	const rowVirtualizer = useVirtualizer({
 		count: rowCount,
 		getScrollElement: () => parentRef.current,
@@ -50,8 +84,8 @@ export const VirtualizedVideoGrid: React.FC<VirtualizedVideoGridProps> = ({
 			>
 				{rowVirtualizer.getVirtualItems().map(virtualRow => {
 					const items = [];
-					const startIdx = virtualRow.index * columns;
-					for (let i = 0; i < columns; i++) {
+					const startIdx = virtualRow.index * responsiveColumns;
+					for (let i = 0; i < responsiveColumns; i++) {
 						const videoIdx = startIdx + i;
 						if (videoIdx >= videos.length) break;
 						const video = videos[videoIdx];

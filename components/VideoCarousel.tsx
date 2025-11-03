@@ -62,7 +62,10 @@ export const VideoCarousel: React.FC<VideoCarouselProps> = ({ title, videos, onV
     const scroll = (direction: 'left' | 'right') => {
         const el = scrollContainerRef.current;
         if (el) {
-            const scrollAmount = el.clientWidth * 0.8;
+            // En móviles, scroll de una tarjeta completa (260px + gap)
+            // En desktop, scroll del 80% del ancho visible
+            const isMobile = window.innerWidth < 640;
+            const scrollAmount = isMobile ? 264 : el.clientWidth * 0.8;
             el.scrollBy({
                 left: direction === 'left' ? -scrollAmount : scrollAmount,
                 behavior: 'smooth'
@@ -87,7 +90,7 @@ export const VideoCarousel: React.FC<VideoCarouselProps> = ({ title, videos, onV
     }
 
     return (
-        <div className="mb-6">
+        <div className="">
             <h2 className="text-xl font-bold tracking-tight mb-4 px-4 sm:px-6 lg:px-8">{title}</h2>
             <div className="relative group">
                 <div 
@@ -96,7 +99,7 @@ export const VideoCarousel: React.FC<VideoCarouselProps> = ({ title, videos, onV
                 >
                     <div className="flex gap-4 px-4 sm:px-6 lg:px-8">
                         {filteredVideos.map((video, idx) => (
-                            <div key={video.id + '-' + (video.page_url || idx)} className="w-64 sm:w-72 flex-shrink-0">
+                            <div key={video.id + '-' + (video.page_url || idx)} className="w-60 sm:w-64 md:w-72 flex-shrink-0">
                                 <VideoCard 
                                     video={video} 
                                     onClick={() => onVideoSelect(video)} 
@@ -110,7 +113,7 @@ export const VideoCarousel: React.FC<VideoCarouselProps> = ({ title, videos, onV
                 {canScrollLeft && (
                     <button 
                         onClick={() => scroll('left')}
-                        className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-12 h-24 bg-black/30 backdrop-blur-sm text-white rounded-r-lg opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-0"
+                        className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-12 h-12 bg-neutral-900 border border-neutral-700 text-white rounded-full shadow-xl hover:bg-neutral-800 hover:border-neutral-600 transition-all duration-200 hover:scale-110"
                         aria-label="Scroll left"
                     >
                         <ChevronLeftIcon />
@@ -119,7 +122,7 @@ export const VideoCarousel: React.FC<VideoCarouselProps> = ({ title, videos, onV
                 {canScrollRight && (
                     <button 
                         onClick={() => scroll('right')}
-                        className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-12 h-24 bg-black/30 backdrop-blur-sm text-white rounded-l-lg opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-0"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-12 h-12 bg-neutral-900 border border-neutral-700 text-white rounded-full shadow-xl hover:bg-neutral-800 hover:border-neutral-600 transition-all duration-200 hover:scale-110"
                         aria-label="Scroll right"
                     >
                         <ChevronRightIcon />

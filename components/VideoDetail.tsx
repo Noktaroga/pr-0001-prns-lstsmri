@@ -33,7 +33,7 @@ const StarIcon: React.FC<{ filled: boolean; className?: string }> = ({ filled, c
         strokeWidth="2" 
         strokeLinecap="round" 
         strokeLinejoin="round"
-        className={className || (filled ? "text-amber-500" : "text-neutral-400 dark:text-neutral-600")}
+        className={className || (filled ? "text-amber-500" : "text-neutral-600")}
     >
         <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
     </svg>
@@ -354,14 +354,14 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
     }
   }, [adOverlayStep]); // Ejecutar cuando cambie el step del overlay
   
-  // Effect para mostrar el botón X después de 12 segundos Y solo si se hizo clic en el banner
+  // Effect para cerrar automáticamente el anuncio después de 12 segundos Y solo si se hizo clic en el banner
   useEffect(() => {
     if (adOverlayStep > 0 && !adHidden && adBannerClicked) {
-      setShowCloseButton(false); // Reset del botón
       const timer = setTimeout(() => {
         if (!adHidden && adOverlayStep > 0 && adBannerClicked) {
-          console.log('[VideoDetail] Mostrando botón X después de 12 segundos Y click en banner');
-          setShowCloseButton(true);
+          console.log('[VideoDetail] Cerrando anuncio automáticamente después de 12 segundos');
+          setAdHidden(true);
+          setAdOverlayStep(0);
         }
       }, 5000); // 5 segundos después del click en el banner
       
@@ -529,7 +529,7 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
     if (adOverlayStep > 0 && !adHidden) {
       // Reset del estado de click cuando cambia el overlay
       setAdClicked(false);
-      console.log(`[VideoDetail] Overlay del anuncio activo - DEBE hacer click en banner primero, luego esperar 12 segundos para el botón X`);
+      console.log(`[VideoDetail] Overlay del anuncio activo - DEBE hacer click en banner primero, luego se cerrará automáticamente en 5 segundos`);
     }
   }, [adOverlayStep, adClicked, adHidden]);
   
@@ -689,11 +689,11 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
   );
 
   return (
-    <main className="mx-auto max-w-7xl py-6 sm:px-6 lg:px-8">
+    <main className="mx-auto max-w-7xl pt-6 sm:px-6 lg:px-8">
       <div className="px-4 sm:px-0 mb-6">
         <button 
           onClick={onBack} 
-          className="inline-flex items-center gap-2 rounded-md border border-neutral-300 dark:border-neutral-700 px-3 py-1.5 text-sm hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+          className="inline-flex items-center gap-2 rounded-md border border-neutral-700 px-3 py-1.5 text-sm hover:bg-neutral-800 transition-colors"
         >
           &larr; Back to videos
         </button>
@@ -730,13 +730,13 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
                       Your browser does not support the video tag.
                     </video>
                     {adOverlayStep > 0 && !adHidden && (
-                      <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/90">
+                      <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/90">
                         {/* JuicyAdsHorizontal - Primer anuncio con dimensiones exactas */}
                         <div
                           ref={adContainerRef}
                           className="mb-4 flex items-center justify-center relative rounded-lg p-2 transition-all duration-200"
                           style={{ width: 328, height: 306 }}
-                          title={adBannerClicked ? "¡Banner clickeado! Espera 12 segundos..." : "Haz click en el anuncio para continuar"}
+                          title={adBannerClicked ? "¡Banner clickeado! Se cerrará automáticamente en 5 segundos..." : "Haz click en el anuncio para continuar"}
                         >
                           {/* Anuncio real en la capa más baja */}
                           <div 
@@ -756,7 +756,8 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
                             style={{
                               fontSize: '16px',
                               fontWeight: 'bold',
-                              textShadow: '1px 1px 2px rgba(0,0,0,0.5)'
+                              textShadow: '1px 1px 2px rgba(0,0,0,0.5)',
+                              opacity: '0.3'
                             }}
                           >
                             ✕
@@ -770,10 +771,11 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
                             style={{
                               fontSize: '16px',
                               fontWeight: 'bold',
-                              textShadow: '1px 1px 2px rgba(0,0,0,0.5)'
+                              textShadow: '1px 1px 2px rgba(0,0,0,0.5)',
+                              opacity: '0.8'
                             }}
                           >
-                            ✕
+                            
                           </button>
                           
                           {/* X FALSA #3 - Centro del anuncio */}
@@ -784,7 +786,8 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
                             style={{
                               fontSize: '20px',
                               fontWeight: 'bold',
-                              textShadow: '1px 1px 2px rgba(0,0,0,0.5)'
+                              textShadow: '1px 1px 2px rgba(0,0,0,0.5)',
+                              opacity: '0.3'
                             }}
                           >
                             ✕
@@ -796,6 +799,7 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
                               className="absolute -top-2 -right-2 z-50 w-8 h-8 bg-red-600 hover:bg-red-700 text-white rounded-full flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-110"
                               onClick={handleCloseAd}
                               title="Cerrar anuncio"
+                              style={{ opacity: '0.3' }}
                             >
                               <CloseIcon />
                             </button>
@@ -803,15 +807,15 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
                         </div>
                         <div className="text-sm text-white mt-4 bg-black/50 px-4 py-2 rounded">
                           {adBannerClicked 
-                            ? "✅ ¡Anuncio abierto! Espera 12 segundos para el botón de cerrar..."
-                            : "� Haz click en la X para cerrar el anuncio"
+                            ? "✅ ¡Anuncio abierto! Se cerrará automáticamente en 5 segundos..."
+                            : "❌ Haz click en las tres X para cerrar el anuncio"
                           }
                         </div>
                       </div>
                     )}
                     
                     {adOverlayStep > 0 && !adHidden && (
-                      <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/90">
+                      <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/90">
 
                         <div
                           className="mb-4 flex items-center justify-center relative rounded-lg p-2 transition-all duration-200"
@@ -820,7 +824,8 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
                           {/* X trasera - z-index dinámico según funcionalidad */}
                           {!adBannerClicked && (
                             <div 
-                              className={`absolute inset-0 pointer-events-none ${activeCloseButton === 1 ? 'z-30' : 'z-5'}`}
+                              className="absolute inset-0 pointer-events-none"
+                              style={{ zIndex: activeCloseButton === 1 ? 25 : 5 }}
                             >
                               <button
                                 className="absolute w-16 h-16 bg-red-600 text-white rounded-full flex items-center justify-center shadow-xl cursor-pointer pointer-events-auto transform -translate-x-1/2 -translate-y-1/2"
@@ -829,7 +834,7 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
                                   fontSize: '24px',
                                   fontWeight: 'bold',
                                   textShadow: '1px 1px 2px rgba(0,0,0,0.5)',
-                                  opacity: activeCloseButton === 1 ? 0.2 : 0.7, // X verdadera menos visible
+                                  opacity: activeCloseButton === 1 ? 0.3 : 0.3, // X verdadera con opacidad reducida
                                   top: xPositionBack.top,
                                   left: xPositionBack.left
                                 }}
@@ -840,10 +845,11 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
                           )}
 
                           {/* Anuncio real POR DETRÁS - 50% transparente y CLICKEABLE */}
-                          <div 
-                            className="relative z-10 cursor-pointer"
+                                                    <div 
+                            className="relative cursor-pointer"
                             style={{ 
-                              opacity: adBannerClicked ? 1 : 0.6 // 50% transparente hasta que se haga click
+                              opacity: adBannerClicked ? 1 : 0.6, // 60% transparente hasta que se haga click
+                              zIndex: 15 // Asegurar que esté por encima de las X falsas pero debajo de la X verdadera
                             }}
                             onClick={handleAdBannerClick}
                           >
@@ -853,7 +859,8 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
                           {/* X frontal - z-index dinámico según funcionalidad */}
                           {!adBannerClicked && (
                             <div 
-                              className={`absolute inset-0 pointer-events-none ${activeCloseButton === 2 ? 'z-30' : 'z-5'}`}
+                              className="absolute inset-0 pointer-events-none"
+                              style={{ zIndex: activeCloseButton === 2 ? 25 : 5 }}
                             >
                               <button
                                 className="absolute w-16 h-16 bg-red-600 text-white rounded-full flex items-center justify-center shadow-xl cursor-pointer pointer-events-auto transform -translate-x-1/2 -translate-y-1/2"
@@ -862,7 +869,7 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
                                   fontSize: '24px',
                                   fontWeight: 'bold',
                                   textShadow: '1px 1px 2px rgba(0,0,0,0.5)',
-                                  opacity: activeCloseButton === 2 ? 0.3 : 0.7, // X verdadera menos visible
+                                  opacity: activeCloseButton === 2 ? 0.3 : 0.3, // X verdadera con opacidad reducida
                                   top: xPosition.top,
                                   left: xPosition.left
                                 }}
@@ -875,7 +882,8 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
                           {/* X tercera - z-index dinámico según funcionalidad */}
                           {!adBannerClicked && (
                             <div 
-                              className={`absolute inset-0 pointer-events-none ${activeCloseButton === 3 ? 'z-30' : 'z-5'}`}
+                              className="absolute inset-0 pointer-events-none"
+                              style={{ zIndex: activeCloseButton === 3 ? 25 : 5 }}
                             >
                               <button
                                 className="absolute w-16 h-16 bg-red-600 text-white rounded-full flex items-center justify-center shadow-xl cursor-pointer pointer-events-auto transform -translate-x-1/2 -translate-y-1/2"
@@ -884,7 +892,7 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
                                   fontSize: '24px',
                                   fontWeight: 'bold',
                                   textShadow: '1px 1px 2px rgba(0,0,0,0.5)',
-                                  opacity: activeCloseButton === 3 ? 0.3 : 0.7, // X verdadera menos visible
+                                  opacity: activeCloseButton === 3 ? 0.3 : 0.3, // X verdadera con opacidad reducida
                                   top: xPositionClose.top,
                                   left: xPositionClose.left
                                 }}
@@ -893,21 +901,32 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
                               </button>
                             </div>
                           )}
-                          
-                          {/* Botón X en la esquina superior derecha */}
-                          {showCloseButton && (
-                            <button
-                              className="absolute -top-2 -right-2 z-50 w-8 h-8 bg-red-600 hover:bg-red-700 text-white rounded-full flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-110"
-                              onClick={handleCloseAd}
-                              title="Cerrar anuncio"
+                          {/* X cuarta - z-index dinámico según funcionalidad */}
+                          {!adBannerClicked && (
+                            <div
+                              className="absolute inset-0 pointer-events-none"
+                              style={{ zIndex: activeCloseButton === 4 ? 25 : 5 }}
                             >
-                              <CloseIcon />
-                            </button>
+                              <button
+                                className="absolute w-16 h-16 bg-red-600 text-white rounded-full flex items-center justify-center shadow-xl cursor-pointer pointer-events-auto transform -translate-x-1/2 -translate-y-1/2"
+                                onClick={() => handleXClick(4)}
+                                style={{
+                                  fontSize: '24px',
+                                  fontWeight: 'bold',
+                                  textShadow: '1px 1px 2px rgba(0,0,0,0.5)',
+                                  opacity: activeCloseButton === 4 ? 0.3 : 0.3, // X verdadera con opacidad reducida
+                                  top: xPositionClose.top,
+                                  left: xPositionClose.left
+                                }}
+                              >
+                                ✕
+                              </button>
+                            </div>
                           )}
                         </div>
                         <div className="text-sm text-white mt-4 bg-black/50 px-4 py-2 rounded">
                           {adBannerClicked 
-                            ? "✅ ¡Anuncio abierto! Espera 12 segundos para el botón de cerrar..."
+                            ? "✅ ¡Anuncio abierto! Se cerrará automáticamente en 5 segundos..."
                             : "❌ Haz click en las tres X para cerrar el anuncio"
                           }
                         </div>
@@ -923,7 +942,7 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
         <div className="lg:col-span-1">
                  <button 
                      onClick={() => onCategorySelect(category)}
-                     className="inline-block bg-neutral-200 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 rounded-full px-3 py-1 text-xs font-semibold mb-3 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors"
+                     className="inline-block bg-neutral-800 text-neutral-200 rounded-full px-3 py-1 text-xs font-semibold mb-3 hover:bg-neutral-700 transition-colors"
                  >
                      {(() => {
                         const lang = (navigator.language || '').toLowerCase().startsWith('es') ? 'es' : 'en';
@@ -942,7 +961,7 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
                  </button>
              <h1 className="text-2xl lg:text-3xl font-bold tracking-tight mb-4">{title}</h1>
 
-             <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-neutral-600 dark:text-neutral-400 mb-6 border-y border-neutral-200 dark:border-neutral-800 py-4">
+             <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-neutral-400 mb-6 border-y border-neutral-800 py-4">
                 <div className="flex items-center gap-2" title={`Rating: ${rating}`}> 
                     <StarRating rating={rating} />
                 </div>
@@ -960,8 +979,8 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
                   onClick={() => onToggleBasketItem(id)}
                   className={`flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium transition-colors ${
                     isVideoInBasket 
-                      ? 'border-neutral-400 bg-neutral-100 dark:border-neutral-600 dark:bg-neutral-800' 
-                      : 'border-neutral-300 hover:bg-neutral-100 dark:border-neutral-700 dark:hover:bg-neutral-800'
+                      ? 'border-neutral-600 bg-neutral-800' 
+                      : 'border-neutral-700 hover:bg-neutral-800'
                   }`}
                   aria-label={isVideoInBasket ? "Remove from basket" : "Add to basket"}
                 >
@@ -982,12 +1001,12 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
       
 
     {/* Horizontal ad above related videos */}
-    <div className="mt-12 px-4 sm:px-0">
+    <div className="mt-8 px-4 sm:px-0">
       <JuicyAdsHorizontal adzoneId={1104273} width={728} height={90} />
     </div>
 
     {validRelated.length > 0 && (
-      <div className="mt-12 border-t border-neutral-200 dark:border-neutral-800 pt-8">
+      <div className="mt-8 border-t border-neutral-800 pt-6">
         <VideoCarousel 
           title="Related Videos"
           videos={validRelated}
@@ -998,8 +1017,8 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
       </div>
     )}
 
-      <div className="mt-12 px-4 sm:px-0">
-  <JuicyAdsHorizontal adzoneId={1104273} width={728} height={90} />
+      <div className="px-4 sm:px-0">
+        <JuicyAdsHorizontal adzoneId={1104273} width={728} height={90} />
       </div>
     </main>
   );

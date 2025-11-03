@@ -125,7 +125,7 @@ const StarIcon: React.FC<{ filled: boolean }> = ({ filled }) => (
         strokeWidth="2" 
         strokeLinecap="round" 
         strokeLinejoin="round"
-        className={filled ? "text-amber-500" : "text-neutral-400 dark:text-neutral-600"}
+        className={filled ? "text-amber-500" : "text-neutral-600"}
     >
         <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
     </svg>
@@ -208,7 +208,7 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick, isInBasket
   return (
     <article
       ref={cardRef}
-      className="group/card overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm transition hover:shadow-md dark:border-neutral-800 dark:bg-neutral-900 relative"
+      className="group/card overflow-hidden rounded-xl border border-neutral-800 bg-neutral-900 shadow-sm transition hover:shadow-md relative"
       role="article"
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
@@ -226,16 +226,16 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick, isInBasket
       </button>
 
       <button onClick={onClick} className="block w-full text-left">
-        <div className="relative h-40 w-full bg-gradient-to-br from-neutral-200 to-neutral-300 dark:from-neutral-800 dark:to-neutral-700">
+        <div className="relative h-40 w-full bg-gradient-to-br from-neutral-800 to-neutral-700">
           {isValidThumbnail && (
             <img src={currentImage} alt={title} loading="lazy" className="h-full w-full object-cover transition-opacity duration-200" />
           )}
           <span className="absolute bottom-2 right-2 rounded bg-black/70 px-1.5 py-0.5 text-xs text-white">{duration}</span>
         </div>
         <div className="space-y-2 p-3">
-          <h3 className="line-clamp-2 text-sm font-semibold leading-snug group-hover:text-neutral-600 dark:group-hover:text-neutral-300">{title}</h3>
-          
-          <div className="flex flex-col gap-1 text-xs text-neutral-600 dark:text-neutral-400">
+          <h3 className="line-clamp-2 text-sm font-semibold leading-snug group-hover:text-neutral-300">{title}</h3>
+        
+          <div className="flex flex-col gap-1 text-xs text-neutral-400">
             <div className="flex items-center gap-2">
               <StarRating rating={rating} />
             </div>
@@ -245,7 +245,7 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick, isInBasket
             </div>
           </div>
 
-          <div className="flex items-center text-xs opacity-70 pt-2 border-t border-neutral-100 dark:border-neutral-800">
+          <div className="flex items-center text-xs opacity-70 pt-2 border-t border-neutral-800">
             {(() => {
               // Selección de idioma (puedes cambiar esto según la lógica de idioma de tu app)
               const lang = (navigator.language || '').toLowerCase().startsWith('es') ? 'es' : 'en';

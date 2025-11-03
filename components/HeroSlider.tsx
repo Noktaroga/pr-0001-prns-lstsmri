@@ -59,6 +59,13 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ videos, onVideoSelect, b
     const filteredVideos = videos.filter(v => isValidThumbnail(v.thumbnail));
 
     const [currentIndex, setCurrentIndex] = useState(0);
+    
+    // Estados para el manejo táctil
+    const [touchStart, setTouchStart] = useState<number | null>(null);
+    const [touchEnd, setTouchEnd] = useState<number | null>(null);
+
+    // Distancia mínima de deslizamiento
+    const minSwipeDistance = 50;
 
     // Ajustar el índice si cambia la lista de videos filtrados
     useEffect(() => {
@@ -78,6 +85,30 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ videos, onVideoSelect, b
         const newIndex = isLastSlide ? 0 : currentIndex + 1;
         setCurrentIndex(newIndex);
     };
+
+    // Funciones para el manejo táctil
+    const onTouchStart = (e: React.TouchEvent) => {
+        setTouchEnd(null);
+        setTouchStart(e.targetTouches[0].clientX);
+    };
+
+    const onTouchMove = (e: React.TouchEvent) => {
+        setTouchEnd(e.targetTouches[0].clientX);
+    };
+
+    const onTouchEnd = () => {
+        if (!touchStart || !touchEnd) return;
+        
+        const distance = touchStart - touchEnd;
+        const isLeftSwipe = distance > minSwipeDistance;
+        const isRightSwipe = distance < -minSwipeDistance;
+
+        if (isLeftSwipe) {
+            goToNext();
+        } else if (isRightSwipe) {
+            goToPrevious();
+        }
+    };
     
     const activeVideo = filteredVideos[currentIndex];
     const isVideoInBasket = activeVideo && basketItems.includes(activeVideo.id);
@@ -87,17 +118,16 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ videos, onVideoSelect, b
     }
 
     return (
-        <div className="relative w-full h-[60vh] max-h-[500px] flex overflow-hidden bg-neutral-100 dark:bg-neutral-900 mb-12">
-            {/* Left Panel: Text Content */}
-            <div className="w-2/5 flex flex-col justify-center items-start p-8 lg:p-12 relative z-10">
+        <div className="relative w-full h-auto sm:h-[100vh] max-h-none sm:max-h-[800px] flex flex-col sm:flex-row overflow-hidden bg-neutral-900 mb-12">
+            {/* Desktop: Left Panel Text Content */}
+            <div className="hidden sm:flex sm:w-2/5 flex-col justify-center items-start p-8 lg:p-12 relative z-10">
                 <div key={currentIndex} className="animate-fadeInUp">
-
-                    <h2 className="text-3xl lg:text-4xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100 mb-6 line-clamp-3">
+                    <h2 className="text-3xl lg:text-4xl font-bold tracking-tight text-neutral-100 mb-6 line-clamp-3">
                         {activeVideo.title}
                     </h2>
                      <button
                         onClick={() => onToggleBasketItem(activeVideo.id)}
-                        className="inline-flex items-center gap-2 rounded-md border border-neutral-300 dark:border-neutral-700 px-4 py-2 text-sm font-medium hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                        className="inline-flex items-center gap-2 rounded-md border border-neutral-700 bg-neutral-900 px-4 py-2 text-sm font-medium hover:bg-neutral-800 transition-colors"
                         aria-label={isVideoInBasket ? "Remove from basket" : "Add to basket"}
                     >
                         {isVideoInBasket ? <BasketCheckIcon /> : <BasketAddIcon />}
@@ -106,17 +136,29 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ videos, onVideoSelect, b
                 </div>
 
                 <div className="flex items-center gap-4 mt-auto">
-                    <button onClick={goToPrevious} className="w-12 h-12 flex items-center justify-center rounded-full border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors" aria-label="Previous slide">
+                    <button onClick={goToPrevious} className="w-12 h-12 flex items-center justify-center rounded-full bg-neutral-900 border border-neutral-700 text-white shadow-xl hover:bg-neutral-800 hover:border-neutral-600 transition-all duration-200 hover:scale-110" aria-label="Previous slide">
                         <ChevronLeftIcon />
                     </button>
-                    <button onClick={goToNext} className="w-12 h-12 flex items-center justify-center rounded-full border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors" aria-label="Next slide">
+                    <button onClick={goToNext} className="w-12 h-12 flex items-center justify-center rounded-full bg-neutral-900 border border-neutral-700 text-white shadow-xl hover:bg-neutral-800 hover:border-neutral-600 transition-all duration-200 hover:scale-110" aria-label="Next slide">
                         <ChevronRightIcon />
                     </button>
                 </div>
             </div>
 
-            {/* Right Panel: Image Carousel */}
-            <div className="w-3/5 h-full relative">
+            {/* Mobile: Title above image */}
+            <div className="sm:hidden p-4 relative z-10">
+                <h2 className="text-2xl font-bold tracking-tight text-neutral-100 mb-4 line-clamp-2">
+                    {activeVideo.title}
+                </h2>
+            </div>
+
+            {/* Image Carousel Container */}
+            <div 
+                className="w-full sm:w-3/5 h-64 sm:h-full relative"
+                onTouchStart={onTouchStart}
+                onTouchMove={onTouchMove}
+                onTouchEnd={onTouchEnd}
+            >
                 <div className="w-full h-full">
                     {filteredVideos.map((video, index) => (
                         <div
@@ -125,7 +167,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ videos, onVideoSelect, b
                             style={{ transform: `translateX(${(index - currentIndex) * 100}%)` }}
                         >
                              <div 
-                                className="group w-full h-full cursor-pointer"
+                                className="group w-full h-full cursor-pointer relative"
                                 onClick={() => onVideoSelect(video)}
                             >
                                 {video.thumbnail ? (
@@ -135,11 +177,44 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ videos, onVideoSelect, b
                                         className="w-full h-full object-cover"
                                     />
                                 ) : null}
-                                <div className="absolute inset-0 bg-gradient-to-r from-neutral-100 dark:from-neutral-900 via-transparent to-transparent"></div>
+                                <div className="absolute inset-0 bg-gradient-to-r from-neutral-900 via-transparent to-transparent"></div>
+                                
+                                {/* Mobile Navigation Buttons - Inside Image */}
+                                <button 
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        goToPrevious();
+                                    }}
+                                    className="sm:hidden absolute left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-black/60 backdrop-blur-sm border border-white/20 text-white shadow-xl hover:bg-black/80 transition-all duration-200"
+                                    aria-label="Previous slide"
+                                >
+                                    <ChevronLeftIcon />
+                                </button>
+                                
+                                <button 
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        goToNext();
+                                    }}
+                                    className="sm:hidden absolute right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-black/60 backdrop-blur-sm border border-white/20 text-white shadow-xl hover:bg-black/80 transition-all duration-200"
+                                    aria-label="Next slide"
+                                >
+                                    <ChevronRightIcon />
+                                </button>
                             </div>
                         </div>
                     ))}
                 </div>
+                
+                {/* Mobile Add to Basket Button - Centered at Bottom */}
+                <button
+                    onClick={() => onToggleBasketItem(activeVideo.id)}
+                    className="sm:hidden absolute bottom-4 left-1/2 -translate-x-1/2 z-20 inline-flex items-center gap-2 rounded-md border border-neutral-700 bg-neutral-900/80 backdrop-blur-sm px-4 py-2 text-sm font-medium hover:bg-neutral-800/80 transition-colors"
+                    aria-label={isVideoInBasket ? "Remove from basket" : "Add to basket"}
+                >
+                    {isVideoInBasket ? <BasketCheckIcon /> : <BasketAddIcon />}
+                    <span>{isVideoInBasket ? 'In Basket' : 'Add to Basket'}</span>
+                </button>
             </div>
         </div>
     );

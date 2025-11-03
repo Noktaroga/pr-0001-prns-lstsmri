@@ -39,7 +39,6 @@ type DurationFilter = 'all' | 'tiny' | 'short' | 'long';
 const PAGE_SIZE = 36;
 
 import { VideoDetail } from "./components/VideoDetail";
-import { LiveStats } from "./components/LiveStats";
 
 const App: React.FC = () => {
   // Inicializar Google Analytics
@@ -49,7 +48,9 @@ const App: React.FC = () => {
 
   const [videos, setVideos] = useState<Video[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(''); // Input del usuario
+  const [activeSearchQuery, setActiveSearchQuery] = useState(''); // Término de búsqueda activo
+  const [searchType, setSearchType] = useState<'exact' | 'intelligent' | null>(null); // Tipo de búsqueda usado
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -118,6 +119,17 @@ const App: React.FC = () => {
   };
 
   const toggleBasketModal = () => setIsBasketOpen(prev => !prev);
+
+  // Función para manejar la búsqueda
+  const handleSearch = (searchTerm: string) => {
+    setActiveSearchQuery(searchTerm);
+    // Si hay un término de búsqueda, cambiar a la vista de videos
+    if (searchTerm.trim()) {
+      setActiveView('videos');
+    } else {
+      setSearchType(null);
+    }
+  };
 
   // ---------------------------
   // Fetch inicial a la API
@@ -189,9 +201,165 @@ const App: React.FC = () => {
         return min + sec / 60;
     };
 
-    // Filtrar primero
-    const filtered = videos.filter((v) => {
-      const matchesQuery = v.title.toLowerCase().includes(query.toLowerCase());
+    // Sistema de búsqueda híbrido: exacta primero, luego inteligente
+    const hybridSearch = (videos: Video[], searchTerm: string) => {
+      if (!searchTerm) {
+        setSearchType(null);
+        return videos;
+      }
+
+      const searchLower = searchTerm.toLowerCase().trim();
+      if (!searchLower) {
+        setSearchType(null);
+        return videos;
+      }
+
+      // PASO 1: Búsqueda exacta
+      const exactMatches = videos.filter(v => 
+        v.title.toLowerCase().includes(searchLower)
+      );
+
+      // Si encontramos resultados exactos, devolverlos ordenados por relevancia exacta
+      if (exactMatches.length > 0) {
+        setSearchType('exact');
+        return exactMatches.sort((a, b) => {
+          const titleA = a.title.toLowerCase();
+          const titleB = b.title.toLowerCase();
+          
+          // Priorizar coincidencias exactas al inicio
+          const startsWithA = titleA.startsWith(searchLower) ? 1000 : 0;
+          const startsWithB = titleB.startsWith(searchLower) ? 1000 : 0;
+          
+          if (startsWithA !== startsWithB) {
+            return startsWithB - startsWithA;
+          }
+          
+          // Luego por popularidad
+          const scoreA = (a.views || 0) + (a.good_votes || 0) - (a.bad_votes || 0);
+          const scoreB = (b.views || 0) + (b.good_votes || 0) - (b.bad_votes || 0);
+          if (scoreB !== scoreA) return scoreB - scoreA;
+          
+          return (b.rating || 0) - (a.rating || 0);
+        });
+      }
+
+      // PASO 2: Si no hay resultados exactos, usar búsqueda inteligente
+      setSearchType('intelligent');
+      return smartSearchWithRelevance(videos, searchTerm);
+    };
+
+    // Función de búsqueda inteligente (solo se usa si no hay resultados exactos)
+    const smartSearchWithRelevance = (videos: Video[], searchTerm: string) => {
+      // Normalizar texto: convertir a minúsculas y remover acentos
+      const normalizeText = (text: string) => {
+        return text.toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '') // Remover acentos
+          .replace(/[^\w\s]/g, ' ') // Reemplazar caracteres especiales con espacios
+          .replace(/\s+/g, ' ') // Múltiples espacios a uno solo
+          .trim();
+      };
+
+      // Función de búsqueda inteligente para un video individual
+      const smartSearchMatch = (title: string, searchTerm: string): boolean => {
+        const titleNormalized = normalizeText(title);
+        const searchNormalized = normalizeText(searchTerm);
+        
+        if (!searchNormalized) return true;
+        
+        // Dividir la búsqueda en palabras individuales
+        const searchWords = searchNormalized.split(' ').filter(word => word.length > 0);
+        
+        // Si solo hay una palabra, usar búsqueda simple
+        if (searchWords.length === 1) {
+          return titleNormalized.includes(searchWords[0]);
+        }
+        
+        // Para múltiples palabras, verificar que todas estén presentes (en cualquier orden)
+        return searchWords.every(word => {
+          if (word.length <= 2) {
+            return titleNormalized.includes(word);
+          } else {
+            return titleNormalized.includes(word) || 
+                   titleNormalized.split(' ').some(titleWord => 
+                     titleWord.includes(word) || word.includes(titleWord)
+                   );
+          }
+        });
+      };
+
+      // Filtrar videos que coinciden con búsqueda inteligente
+      const intelligentMatches = videos.filter(v => 
+        smartSearchMatch(v.title, searchTerm)
+      );
+
+      // Ordenar por relevancia inteligente
+      return intelligentMatches.sort((a, b) => {
+        const relevanceA = calculateSearchRelevance(a.title, searchTerm);
+        const relevanceB = calculateSearchRelevance(b.title, searchTerm);
+        
+        if (relevanceB !== relevanceA) {
+          return relevanceB - relevanceA;
+        }
+        
+        // Luego por popularidad
+        const scoreA = (a.views || 0) + (a.good_votes || 0) - (a.bad_votes || 0);
+        const scoreB = (b.views || 0) + (b.good_votes || 0) - (b.bad_votes || 0);
+        if (scoreB !== scoreA) return scoreB - scoreA;
+        
+        return (b.rating || 0) - (a.rating || 0);
+      });
+    };
+
+    // Función para calcular relevancia de búsqueda (usada en búsqueda inteligente)
+    const calculateSearchRelevance = (title: string, searchTerm: string): number => {
+      if (!searchTerm) return 0;
+      
+      const titleLower = title.toLowerCase();
+      const searchLower = searchTerm.toLowerCase().trim();
+      
+      // Coincidencia exacta completa
+      if (titleLower === searchLower) return 1000;
+      
+      // Coincidencia exacta al inicio
+      if (titleLower.startsWith(searchLower)) return 800;
+      
+      // Coincidencia exacta en cualquier parte
+      if (titleLower.includes(searchLower)) return 600;
+      
+      // Dividir en palabras para búsqueda por palabras
+      const searchWords = searchLower.split(/\s+/).filter(word => word.length > 0);
+      const titleWords = titleLower.split(/\s+/);
+      
+      let relevance = 0;
+      
+      // Puntos por cada palabra encontrada
+      searchWords.forEach(searchWord => {
+        titleWords.forEach(titleWord => {
+          if (titleWord === searchWord) {
+            relevance += 200; // Coincidencia exacta de palabra
+          } else if (titleWord.includes(searchWord)) {
+            relevance += 100; // Palabra contiene la búsqueda
+          } else if (searchWord.includes(titleWord)) {
+            relevance += 50; // Búsqueda contiene la palabra
+          }
+        });
+      });
+      
+      // Bonus por porcentaje de palabras encontradas
+      const foundWords = searchWords.filter(searchWord => 
+        titleWords.some(titleWord => 
+          titleWord.includes(searchWord) || searchWord.includes(titleWord)
+        )
+      ).length;
+      
+      relevance += (foundWords / searchWords.length) * 100;
+      
+      return relevance;
+    };
+
+    // Aplicar filtros de categoría y duración primero
+    let videosToSearch = videos.filter((v) => {
       const matchesCat = activeCat === "all" ? true : v.category === activeCat;
       let matchesDuration = true;
       const minutes = getMinutes(v.duration);
@@ -202,18 +370,25 @@ const App: React.FC = () => {
       } else if (durationFilter === 'long') {
         matchesDuration = minutes > 10;
       }
-      return matchesQuery && matchesCat && matchesDuration;
+      return matchesCat && matchesDuration;
     });
 
-    // Ordenar por visitas + likes - dislikes, luego por rating
-    return filtered.sort((a, b) => {
-      const scoreA = (a.views || 0) + (a.good_votes || 0) - (a.bad_votes || 0);
-      const scoreB = (b.views || 0) + (b.good_votes || 0) - (b.bad_votes || 0);
-      if (scoreB !== scoreA) return scoreB - scoreA;
-      // Si empatan, más estrellas primero
-      return (b.rating || 0) - (a.rating || 0);
-    });
-  }, [videos, query, activeCat, durationFilter]);
+    // Aplicar búsqueda híbrida si hay término de búsqueda
+    if (activeSearchQuery) {
+      videosToSearch = hybridSearch(videosToSearch, activeSearchQuery);
+    } else {
+      // Si no hay búsqueda, limpiar el tipo de búsqueda y ordenar por popularidad
+      setSearchType(null);
+      videosToSearch = videosToSearch.sort((a, b) => {
+        const scoreA = (a.views || 0) + (a.good_votes || 0) - (a.bad_votes || 0);
+        const scoreB = (b.views || 0) + (b.good_votes || 0) - (b.bad_votes || 0);
+        if (scoreB !== scoreA) return scoreB - scoreA;
+        return (b.rating || 0) - (a.rating || 0);
+      });
+    }
+
+    return videosToSearch;
+  }, [videos, activeSearchQuery, activeCat, durationFilter]);
 
   // resetear página cuando cambian filtros
   useEffect(() => {
@@ -225,7 +400,7 @@ const App: React.FC = () => {
     } else if (activeView === 'home') {
       window.history.replaceState({}, '', '/Home');
     }
-  }, [query, activeCat, durationFilter, activeView]);
+  }, [activeSearchQuery, activeCat, durationFilter, activeView]);
 
   // Sincronizar currentPage con la URL
   useEffect(() => {
@@ -254,8 +429,21 @@ const App: React.FC = () => {
     }
   }, [currentPage, activeView]);
 
-  // Solo para la vista 'videos', el paginado viene del backend
-  const totalPages = activeView === 'videos' ? Math.ceil(totalVideos / pageSize) : 1;
+  // Solo para la vista 'videos', el paginado viene del backend cuando no hay búsqueda
+  const shouldUseLocalFiltering = activeView === 'videos' && activeSearchQuery;
+  const displayVideos = shouldUseLocalFiltering ? filteredVideos : videosPage;
+  const totalPages = shouldUseLocalFiltering 
+    ? Math.ceil(filteredVideos.length / pageSize) 
+    : (activeView === 'videos' ? Math.ceil(totalVideos / pageSize) : 1);
+
+  // Para el filtrado local, necesitamos paginación manual
+  const paginatedFilteredVideos = React.useMemo(() => {
+    if (!shouldUseLocalFiltering) return filteredVideos;
+    const start = (currentPage - 1) * pageSize;
+    return filteredVideos.slice(start, start + pageSize);
+  }, [filteredVideos, currentPage, pageSize, shouldUseLocalFiltering]);
+
+  const finalDisplayVideos = shouldUseLocalFiltering ? paginatedFilteredVideos : videosPage;
 
   // ---------------------------
   // Navegación interna
@@ -304,6 +492,10 @@ const App: React.FC = () => {
     setActiveView('videos');
     setActiveCat(category);
     setSelectedVideo(null);
+    // Limpiar búsqueda al cambiar categoría
+    setActiveSearchQuery('');
+    setQuery('');
+    setSearchType(null);
     // Remove video param from URL
     const params = new URLSearchParams(window.location.search);
     if (params.has('video')) {
@@ -344,7 +536,7 @@ const App: React.FC = () => {
   // Estado de carga inicial o error de la API
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
+      <div className="min-h-screen flex items-center justify-center bg-neutral-950 text-neutral-100">
         <p className="text-lg font-semibold">Cargando contenido…</p>
       </div>
     );
@@ -352,7 +544,7 @@ const App: React.FC = () => {
 
   if (loadError) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
+      <div className="min-h-screen flex items-center justify-center bg-neutral-950 text-neutral-100">
         <div className="text-center">
           <p className="text-lg font-semibold mb-2">{loadError}</p>
           <p className="text-sm opacity-75">Intenta recargar la página.</p>
@@ -362,7 +554,7 @@ const App: React.FC = () => {
   }
 
   return (
-  <div className="min-h-screen bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100 flex flex-col" style={{ fontFamily: 'Inter, Segoe UI, Arial, sans-serif', minHeight: '100vh' }}>
+  <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col" style={{ fontFamily: 'Inter, Segoe UI, Arial, sans-serif' }}>
       <Header
         onToggleSidebar={() => setShowSidebar((s) => !s)}
         query={query}
@@ -371,10 +563,13 @@ const App: React.FC = () => {
         onViewChange={handleViewChange}
         basketItemCount={basketItems.length}
         onToggleBasket={toggleBasketModal}
+        onSearch={handleSearch}
       />
 
-      {/* Navegación y bulletin bar */}
-      {(activeView === 'home' || activeView === 'videos') && (
+      {/* Main content wrapper - flex-grow pushes footer to bottom */}
+      <div className="flex-1">
+        {/* Navegación y bulletin bar */}
+        {(activeView === 'home' || activeView === 'videos') && (
         <>
           {/* Navigation removed as per user request */}
           <style>{`
@@ -389,7 +584,7 @@ const App: React.FC = () => {
               }
             }
           `}</style>
-          <div className={`${activeView === 'videos' ? 'mb-6' : ''}`} style={{width: '100vw', position: 'relative', left: '50%', right: '50%', marginLeft: '-50vw', marginRight: '-50vw', zIndex: 50}}>
+          <div className={`${activeView === 'videos' ? 'mb-6' : ''}`} style={{width: '100vw', position: 'relative', left: '50%', right: '50%', marginLeft: '-50vw', marginRight: '-50vw', zIndex: 30}}>
             <div
               className="transition-transform duration-200 ease-in-out cursor-pointer flex items-center justify-center py-3 text-center text-base font-extrabold tracking-wide select-none shadow-lg bg-black/90 neon-bulletin-glow"
               style={{
@@ -443,10 +638,50 @@ const App: React.FC = () => {
           {activeView === 'videos' && (
             <>
               <main className="w-full grid grid-cols-1 gap-4 xl:grid-cols-12">
+                {/* Mobile sidebar overlay */}
+                {showSidebar && (
+                  <div className="fixed inset-0 z-50 xl:hidden">
+                    {/* Backdrop */}
+                    <div 
+                      className="absolute inset-0 bg-black/50"
+                      onClick={() => setShowSidebar(false)}
+                    ></div>
+                    {/* Sidebar panel */}
+                    <div className="absolute left-0 top-0 h-full w-80 bg-neutral-950 shadow-xl overflow-y-auto">
+                      <div className="p-4">
+                        <div className="flex items-center justify-between mb-4">
+                          <h2 className="text-lg font-semibold">Filters</h2>
+                          <button
+                            onClick={() => setShowSidebar(false)}
+                            className="p-2 rounded-md hover:bg-neutral-800"
+                            aria-label="Close sidebar"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                        <Sidebar 
+                          onCategorySelect={(category) => {
+                            handleCategorySelect(category);
+                            setShowSidebar(false); // Close sidebar after selection
+                          }}
+                          activeDurationFilter={durationFilter}
+                          onDurationFilterChange={(filter) => {
+                            setDurationFilter(filter);
+                            setShowSidebar(false); // Close sidebar after selection
+                          }}
+                          categories={categories}
+                          filteredVideos={finalDisplayVideos}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Desktop sidebar */}
                 <aside
-                  className={`xl:col-span-2 transition-transform duration-300 ease-in-out ${
-                    showSidebar ? "block" : "hidden xl:block"
-                  } ml-2 md:ml-4 xl:ml-6`}
+                  className="hidden xl:block xl:col-span-2 ml-2 md:ml-4 xl:ml-6"
                   aria-label="Sidebar navigation"
                 >
                   <div className="lg:sticky lg:top-28">
@@ -455,16 +690,58 @@ const App: React.FC = () => {
                       activeDurationFilter={durationFilter}
                       onDurationFilterChange={setDurationFilter}
                       categories={categories}
-                      filteredVideos={videosPage}
+                      filteredVideos={finalDisplayVideos}
                     />
                   </div>
                 </aside>
 
                 <section className="xl:col-span-8 lg:col-span-9" aria-label="Results">
                   <div className="mb-4 flex items-center justify-between gap-4">
-                    <h2 className="text-lg font-semibold">Videos por categoría</h2>
+                    <div className="flex items-center gap-3">
+                      <h2 className="text-lg font-semibold">
+                        {activeSearchQuery ? `Resultados para "${activeSearchQuery}"` : 'Videos por categoría'}
+                      </h2>
+                      {activeSearchQuery && searchType && (
+                        <div className="flex items-center gap-2">
+                          <span className={`px-2 py-1 text-xs rounded-full ${
+                            searchType === 'exact' 
+                              ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
+                              : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                          }`}>
+                            {searchType === 'exact' ? '🎯 Búsqueda exacta' : '🧠 Búsqueda inteligente'}
+                          </span>
+                          <button
+                            onClick={() => {
+                              setActiveSearchQuery('');
+                              setQuery('');
+                              setSearchType(null);
+                            }}
+                            className="px-3 py-1 text-xs rounded-md border border-red-500 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-all duration-300"
+                            style={{
+                              boxShadow: '0 0 5px rgba(239, 68, 68, 0.3)',
+                            }}
+                          >
+                            Limpiar búsqueda
+                          </button>
+                        </div>
+                      )}
+                      {activeSearchQuery && !searchType && (
+                        <button
+                          onClick={() => {
+                            setActiveSearchQuery('');
+                            setQuery('');
+                          }}
+                          className="px-3 py-1 text-xs rounded-md border border-red-500 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-all duration-300"
+                          style={{
+                            boxShadow: '0 0 5px rgba(239, 68, 68, 0.3)',
+                          }}
+                        >
+                          Limpiar búsqueda
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  {activeView === 'videos' && totalPages > 1 && videosPage.length > 0 && (
+                  {activeView === 'videos' && totalPages > 1 && finalDisplayVideos.length > 0 && (
                     <div className="mb-4">
                       <Pagination 
                         currentPage={currentPage}
@@ -474,7 +751,7 @@ const App: React.FC = () => {
                     </div>
                   )}
                   {loading ? (
-                    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+                    <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6">
                       {Array.from({ length: 12 }).map((_, i) => (
                         <div key={i}><VideoCardSkeleton /></div>
                       ))}
@@ -482,7 +759,7 @@ const App: React.FC = () => {
                   ) : (
                     <div style={{ width: '100%' }}>
                       <VirtualizedVideoGrid
-                        videos={videosPage}
+                        videos={finalDisplayVideos}
                         onVideoSelect={handleVideoSelect}
                         basketItems={basketItems}
                         onToggleBasketItem={toggleBasketItem}
@@ -491,7 +768,7 @@ const App: React.FC = () => {
                       />
                     </div>
                   )}
-                  {activeView === 'videos' && totalPages > 1 && videosPage.length > 0 && (
+                  {activeView === 'videos' && totalPages > 1 && finalDisplayVideos.length > 0 && (
                     <>
                       <div className="mt-1">
                         <Pagination 
@@ -507,8 +784,38 @@ const App: React.FC = () => {
                       </div>
                     </>
                   )}
-                  {activeView === 'videos' && videosPage.length === 0 && !loading && (
-                    <div className="text-center text-neutral-500 py-12">No hay videos para mostrar.</div>
+                  {activeView === 'videos' && finalDisplayVideos.length === 0 && !loading && (
+                    <div className="text-center text-neutral-500 py-12">
+                      {activeSearchQuery ? (
+                        <div className="space-y-4">
+                          <p className="text-lg">No se encontraron resultados para "{activeSearchQuery}"</p>
+                          {searchType && (
+                            <p className="text-sm text-neutral-400">
+                              {searchType === 'exact' 
+                                ? '🎯 Se intentó búsqueda exacta primero, pero no se encontraron coincidencias exactas.'
+                                : '🧠 Se utilizó búsqueda inteligente, pero no se encontraron coincidencias relevantes.'
+                              }
+                            </p>
+                          )}
+                          <p className="text-sm">Intenta con otros términos de búsqueda o explora nuestras categorías.</p>
+                          <button
+                            onClick={() => {
+                              setActiveSearchQuery('');
+                              setQuery('');
+                              setSearchType(null);
+                            }}
+                            className="px-4 py-2 text-sm rounded-md border border-purple-500 text-purple-400 hover:bg-purple-500/20 hover:text-purple-300 transition-all duration-300"
+                            style={{
+                              boxShadow: '0 0 5px rgba(147, 51, 234, 0.3)',
+                            }}
+                          >
+                            Ver todos los videos
+                          </button>
+                        </div>
+                      ) : (
+                        'No hay videos para mostrar.'
+                      )}
+                    </div>
                   )}
                 </section>
 
@@ -528,7 +835,7 @@ const App: React.FC = () => {
               </main>
               <button
                 onClick={() => setShowSidebar((s) => !s)}
-                className="fixed bottom-6 right-6 inline-flex items-center gap-2 rounded-full border border-neutral-300 bg-white px-4 py-2 text-sm shadow-lg hover:bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-900 dark:hover:bg-neutral-800 lg:hidden"
+                className="fixed bottom-6 right-6 inline-flex items-center gap-2 rounded-full border border-neutral-700 bg-neutral-900 px-4 py-2 text-sm shadow-lg hover:bg-neutral-800 xl:hidden"
                 aria-label="Toggle filters"
               >
                 <FilterIcon />
@@ -538,6 +845,7 @@ const App: React.FC = () => {
           )}
         </>
       )}
+      </div>
 
       <Footer />
       <Basket
@@ -598,9 +906,6 @@ const App: React.FC = () => {
           </div>
         </div>
       )}
-      
-      {/* Componente de estadísticas en tiempo real */}
-      <LiveStats />
     </div>
   );
 }

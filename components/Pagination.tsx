@@ -29,8 +29,8 @@ export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages,
 
     const pageNumbers = getPaginationRange(totalPages, currentPage);
 
-    const buttonClasses = "rounded-md border border-neutral-300 px-3 py-1.5 text-sm font-medium hover:bg-neutral-100 dark:border-neutral-700 dark:hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed";
-    const activeButtonClasses = "border-neutral-900 bg-neutral-900 text-white dark:border-white dark:bg-white dark:text-neutral-900";
+    const buttonClasses = "rounded-md border border-neutral-700 px-3 py-1.5 text-sm font-medium hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed";
+    const activeButtonClasses = "border-white bg-white text-neutral-900";
 
     return (
         <nav className="flex items-center justify-center gap-2 flex-wrap" aria-label="Pagination">
