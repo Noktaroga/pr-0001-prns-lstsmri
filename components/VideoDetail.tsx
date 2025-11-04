@@ -9,6 +9,80 @@ function formatShortCount(n: number): string {
     if (n < 10000000) return `+${Math.floor(n / 100000) * 100}K`;
     return `+${Math.floor(n / 1000000)}M`;
 }
+
+// Función para generar Schema.org VideoObject structured data
+function generateVideoSchema(video: Video): string {
+    // Convertir duración de formato MM:SS o HH:MM:SS a ISO 8601 duration (PT2M35S)
+    const convertDurationToISO = (duration: string): string => {
+        const parts = duration.split(':').map(Number);
+        if (parts.length === 2) {
+            // MM:SS format
+            const [minutes, seconds] = parts;
+            return `PT${minutes}M${seconds}S`;
+        } else if (parts.length === 3) {
+            // HH:MM:SS format
+            const [hours, minutes, seconds] = parts;
+            return `PT${hours}H${minutes}M${seconds}S`;
+        }
+        return 'PT0S'; // fallback
+    };
+
+    // Generar descripción basada en categoría y rating
+    const generateDescription = (video: Video): string => {
+        const categoryName = video.categoryLabel || video.category;
+        const rating = video.rating ? `${video.rating}/5 stars` : '';
+        const votes = video.total_votes ? `${video.total_votes} votes` : '';
+        
+        let description = `${categoryName} video`;
+        if (rating && votes) {
+            description += ` - Rated ${rating} (${votes})`;
+        }
+        if (video.duration) {
+            description += ` - Duration: ${video.duration}`;
+        }
+        
+        return description.substring(0, 200); // Google recommends max 200 chars for description
+    };
+
+    const schema = {
+        "@context": "https://schema.org",
+        "@type": "VideoObject",
+        "name": video.title,
+        "description": generateDescription(video),
+        "thumbnailUrl": video.thumbnail || '',
+        "uploadDate": new Date().toISOString().split('T')[0], // Use current date as fallback
+        "duration": convertDurationToISO(video.duration || '0:00'),
+        "contentUrl": `${window.location.origin}/video/${video.id}`,
+        "embedUrl": `${window.location.origin}/video/${video.id}`,
+        "interactionStatistic": [
+            {
+                "@type": "InteractionCounter",
+                "interactionType": "http://schema.org/WatchAction",
+                "userInteractionCount": video.views || 0
+            },
+            {
+                "@type": "InteractionCounter", 
+                "interactionType": "http://schema.org/LikeAction",
+                "userInteractionCount": video.good_votes || 0
+            }
+        ],
+        "aggregateRating": video.rating && video.total_votes ? {
+            "@type": "AggregateRating",
+            "ratingValue": video.rating,
+            "ratingCount": video.total_votes,
+            "bestRating": 5,
+            "worstRating": 1
+        } : undefined,
+        "genre": video.categoryLabel || video.category,
+        "isFamilyFriendly": false, // Adult content
+        "inLanguage": "en"
+    };
+
+    // Remove undefined values
+    const cleanSchema = JSON.parse(JSON.stringify(schema));
+    
+    return JSON.stringify(cleanSchema, null, 2);
+}
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { Video } from '../types';
@@ -107,6 +181,33 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
   // Asegura que sources siempre sea un array
   const { id, title, category, rating, total_votes, good_votes, bad_votes, duration } = video;
   const sources = Array.isArray(video.sources) && video.sources.length > 0 ? video.sources : [{ quality: 'default', url: '' }];
+  
+  // Schema.org VideoObject - Agregar al head del documento
+  useEffect(() => {
+    const schemaScript = document.createElement('script');
+    schemaScript.type = 'application/ld+json';
+    schemaScript.textContent = generateVideoSchema(video);
+    schemaScript.id = `video-schema-${video.id}`;
+    
+    // Remove any existing schema for this video
+    const existingSchema = document.getElementById(`video-schema-${video.id}`);
+    if (existingSchema) {
+      document.head.removeChild(existingSchema);
+    }
+    
+    // Add new schema
+    document.head.appendChild(schemaScript);
+    
+    console.log('[VideoDetail] Schema.org VideoObject added:', JSON.parse(schemaScript.textContent));
+    
+    // Cleanup when component unmounts or video changes
+    return () => {
+      const currentSchema = document.getElementById(`video-schema-${video.id}`);
+      if (currentSchema && document.head.contains(currentSchema)) {
+        document.head.removeChild(currentSchema);
+      }
+    };
+  }, [video]);
   
   // Agregar estilos CSS para la animación
   React.useEffect(() => {
