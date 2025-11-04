@@ -9,7 +9,6 @@ function formatShortCount(n: number): string {
 }
 
 import React, { useState, useEffect, useRef } from 'react';
-import DICTIONARY_ES from '../dictionaries/dictionary-es';
 import DICTIONARY_ENG from '../dictionaries/dictionary-eng';
 import { Video } from '../types';
 
@@ -247,19 +246,14 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick, isInBasket
 
           <div className="flex items-center text-xs opacity-70 pt-1.5 border-t border-neutral-800">
             {(() => {
-              // Selección de idioma (puedes cambiar esto según la lógica de idioma de tu app)
-              const lang = (navigator.language || '').toLowerCase().startsWith('es') ? 'es' : 'en';
-              const DICTIONARIES = [DICTIONARY_ES, DICTIONARY_ENG];
+              // Usar solo diccionario en inglés
               let normalizedCategory = category.startsWith('/') ? category : '/' + category;
               let mapped = categoryLabel;
               if (!mapped) {
-                for (const DICTIONARY of DICTIONARIES) {
-                  mapped = DICTIONARY[normalizedCategory]
-                    || DICTIONARY[normalizedCategory.replace(/\s+/g, '').toLowerCase()]
-                    || DICTIONARY[category]
-                    || DICTIONARY[category.replace(/\s+/g, '').toLowerCase()];
-                  if (mapped) break;
-                }
+                mapped = DICTIONARY_ENG[normalizedCategory]
+                  || DICTIONARY_ENG[normalizedCategory.replace(/\s+/g, '').toLowerCase()]
+                  || DICTIONARY_ENG[category]
+                  || DICTIONARY_ENG[category.replace(/\s+/g, '').toLowerCase()];
               }
               return mapped || category;
             })()}

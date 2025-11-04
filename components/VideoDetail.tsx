@@ -1,4 +1,3 @@
-import DICTIONARY_ES from '../dictionaries/dictionary-es';
 import DICTIONARY_ENG from '../dictionaries/dictionary-eng';
 // Formatea el número de forma escalable para valores grandes
 function formatShortCount(n: number): string {
@@ -945,17 +944,12 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
                      className="inline-block bg-neutral-800 text-neutral-200 rounded-full px-3 py-1 text-xs font-semibold mb-3 hover:bg-neutral-700 transition-colors"
                  >
                      {(() => {
-                        const lang = (navigator.language || '').toLowerCase().startsWith('es') ? 'es' : 'en';
-                        const DICTIONARIES = [DICTIONARY_ES, DICTIONARY_ENG];
+                        // Usar solo diccionario en inglés
                         let normalizedCategory = category.startsWith('/') ? category : '/' + category;
-                        let mapped = '';
-                        for (const DICTIONARY of DICTIONARIES) {
-                          mapped = DICTIONARY[normalizedCategory]
-                             || DICTIONARY[normalizedCategory.replace(/\s+/g, '').toLowerCase()]
-                             || DICTIONARY[category]
-                             || DICTIONARY[category.replace(/\s+/g, '').toLowerCase()];
-                          if (mapped) break;
-                        }
+                        let mapped = DICTIONARY_ENG[normalizedCategory]
+                           || DICTIONARY_ENG[normalizedCategory.replace(/\s+/g, '').toLowerCase()]
+                           || DICTIONARY_ENG[category]
+                           || DICTIONARY_ENG[category.replace(/\s+/g, '').toLowerCase()];
                         return mapped || category;
                      })()}
                  </button>

@@ -1,7 +1,7 @@
 // constants.ts
 
 import { Video, Category } from './types';
-import DICTIONARY_ES from './dictionaries/dictionary-es';
+import DICTIONARY_ENG from './dictionaries/dictionary-eng';
 
 // =====================================================
 // Helpers numéricos / formato (sin cambios relevantes)
@@ -232,7 +232,7 @@ const transformRawVideoToVideo = (rawVideo: any): Video => {
         title: rawVideo.title,
         duration: formatDuration(rawVideo.duration),
         category: rawVideo.category,
-        categoryLabel: DICTIONARY_ES[rawVideo.category] || rawVideo.category,
+        categoryLabel: DICTIONARY_ENG[rawVideo.category] || rawVideo.category,
         views: viewsNum,
         rating: parseFloat(rating.toFixed(1)),
         total_votes: totalVotesNum,

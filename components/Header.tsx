@@ -10,6 +10,7 @@ interface HeaderProps {
   basketItemCount: number;
   onToggleBasket: () => void;
   onSearch: (searchTerm: string) => void; // Nueva prop para manejar la búsqueda
+  t: (key: string) => string;
 }
 
 const SearchIcon = () => (
@@ -44,8 +45,7 @@ const BasketIcon = () => (
 );
 
 
-export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, query, setQuery, activeView, onViewChange, basketItemCount, onToggleBasket, onSearch }) => {
-  const [lang, setLang] = React.useState<'ES' | 'EN'>('ES');
+export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, query, setQuery, activeView, onViewChange, basketItemCount, onToggleBasket, onSearch, t }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const [searchInput, setSearchInput] = React.useState(''); // Estado local para el input
   const searchInputRef = React.useRef<HTMLInputElement>(null);
@@ -139,7 +139,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, query, setQuery
               value={searchInput}
               onChange={(e) => handleInputChange(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Search…"
+              placeholder={t('search')}
               className="w-full rounded-l-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm outline-none ring-0 placeholder:text-neutral-500 hover:border-neutral-400 focus:border-white"
             />
             <button
@@ -157,7 +157,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, query, setQuery
               onClick={() => onViewChange('home')}
               className={`${navButtonClasses} ${activeView === 'home' ? activeNavButtonClasses : inactiveNavButtonClasses}`}
             >
-              Home
+              {t('home')}
             </button>
             <button 
               onClick={() => onViewChange('videos')}
@@ -218,7 +218,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, query, setQuery
               value={searchInput}
               onChange={(e) => handleInputChange(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Search…"
+              placeholder={t('search')}
               className="w-56 rounded-l-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm outline-none ring-0 placeholder:text-neutral-500 hover:border-neutral-400 focus:border-white"
             />
             <button
@@ -234,22 +234,6 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, query, setQuery
             <kbd className="pointer-events-none absolute right-14 rounded border border-neutral-700 bg-neutral-800 px-1.5 text-[11px] text-neutral-400">
               /
             </kbd>
-          </div>
-
-          {/* Language buttons - hidden on very small screens */}
-          <div className="hidden md:flex items-center gap-2 ml-2">
-            {['ES', 'EN'].map((lng) => (
-              <button
-                key={lng}
-                onClick={() => setLang(lng as 'ES' | 'EN')}
-                className={`flex items-center justify-center w-9 h-9 rounded-full border text-xs font-bold transition-colors
-                  ${lang === lng ? 'bg-blue-600 text-white border-blue-600 shadow-lg' : 'bg-neutral-900 text-neutral-200 border-neutral-700 hover:bg-neutral-800'}`}
-                style={{ outline: lang === lng ? '2px solid #2563eb' : undefined }}
-                aria-pressed={lang === lng}
-              >
-                {lng}
-              </button>
-            ))}
           </div>
 
           <button 
@@ -291,7 +275,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, query, setQuery
                     activeView === 'home' ? 'bg-neutral-800' : 'hover:bg-neutral-800/50'
                   }`}
                 >
-                  Home
+                  {t('home')}
                 </button>
                 <button 
                   onClick={() => {
@@ -321,23 +305,6 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, query, setQuery
                     New
                   </span>
                 </button>
-              </div>
-
-              {/* Language selection */}
-              <div className="border-t border-neutral-800 pt-4">
-                <h3 className="text-sm font-medium mb-2">Language</h3>
-                <div className="flex gap-2">
-                  {['ES', 'EN'].map((lng) => (
-                    <button
-                      key={lng}
-                      onClick={() => setLang(lng as 'ES' | 'EN')}
-                      className={`flex items-center justify-center w-12 h-8 rounded border text-xs font-bold transition-colors
-                        ${lang === lng ? 'bg-blue-600 text-white border-blue-600' : 'bg-neutral-900 text-neutral-200 border-neutral-700 hover:bg-neutral-800'}`}
-                    >
-                      {lng}
-                    </button>
-                  ))}
-                </div>
               </div>
 
               {/* Sidebar toggle for videos (mobile) */}

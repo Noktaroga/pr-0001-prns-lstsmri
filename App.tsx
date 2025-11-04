@@ -19,6 +19,7 @@ import React, { useMemo, useState, useEffect } from "react";
 import { initGA, trackPageView, trackVideoPlay, trackCategorySelect, trackSearch } from "./utils/analytics";
 import { Header } from "./components/Header";
 import { Sidebar } from "./components/Sidebar";
+import DICTIONARY_ENG from "./dictionaries/dictionary-eng";
 import { Footer } from "./components/Footer";
 import { VideoCard } from "./components/VideoCard";
 import { AdSlot } from "./components/AdSlot";
@@ -47,6 +48,11 @@ const PAGE_SIZE = 36;
 import { VideoDetail } from "./components/VideoDetail";
 
 const App: React.FC = () => {
+  // Función de traducción simple para inglés
+  const t = (key: string): string => {
+    return DICTIONARY_ENG[key] || key;
+  };
+  
   // Inicializar Google Analytics
   useEffect(() => {
     initGA();
@@ -672,6 +678,7 @@ const App: React.FC = () => {
         basketItemCount={basketItems.length}
         onToggleBasket={toggleBasketModal}
         onSearch={handleSearch}
+        t={t}
       />
 
       {/* Main content wrapper - flex-grow pushes footer to bottom */}

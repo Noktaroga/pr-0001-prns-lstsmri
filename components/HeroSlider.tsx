@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import DICTIONARY_ES from '../dictionaries/dictionary-es';
+import DICTIONARY_ENG from '../dictionaries/dictionary-eng';
 import { Video } from '../types';
 
 interface HeroSliderProps {
