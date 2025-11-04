@@ -74,13 +74,6 @@ export const Home: React.FC<HomeProps> = ({ videos: fallbackVideos, onVideoSelec
         }
     }, []); // Sin dependencias para evitar bucle infinito
     
-    // Función para refrescar contenido
-    const handleRefresh = () => {
-        if (!loading && !refreshing) {
-            loadDiverseVideos(true);
-        }
-    };
-    
     // Usar videos diversos si están disponibles, sino usar fallback
     const videos = diverseVideos.length > 0 ? diverseVideos : fallbackVideos;
     
@@ -205,32 +198,6 @@ export const Home: React.FC<HomeProps> = ({ videos: fallbackVideos, onVideoSelec
 
     return (
         <main className="pt-6 pb-0">
-            {/* Botón de refrescar contenido */}
-            <div className="flex justify-between items-center mb-6 px-4 sm:px-6 lg:px-8">
-                <h1 className="text-2xl font-bold">Página principal</h1>
-                <button
-                    onClick={handleRefresh}
-                    disabled={refreshing || loading}
-                    className={`flex items-center gap-2 px-4 py-2 text-sm rounded-md border transition-all duration-300 ${
-                        refreshing || loading
-                            ? 'border-neutral-600 text-neutral-400 cursor-not-allowed' 
-                            : 'border-purple-500 text-purple-400 hover:bg-purple-500/20 hover:text-purple-300'
-                    }`}
-                    style={{
-                        boxShadow: (refreshing || loading) ? undefined : '0 0 5px rgba(147, 51, 234, 0.3)',
-                    }}
-                >
-                    <svg 
-                        className={`w-4 h-4 ${(refreshing || loading) ? 'animate-spin' : ''}`} 
-                        fill="none" 
-                        stroke="currentColor" 
-                        viewBox="0 0 24 24"
-                    >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                    {refreshing ? 'Refrescando...' : loading ? 'Cargando...' : 'Nuevo contenido'}
-                </button>
-            </div>
             
             {loading ? (
                 // Mostrar skeletons mientras carga
