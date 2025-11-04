@@ -1,5 +1,5 @@
-# Robots.txt for https://pornsters.example.com
-# Generated on: 2025-11-04T20:46:21.625Z
+# Robots.txt for https://pornsters.net
+# Generated on: 2025-11-04T20:56:49.979Z
 # Environment: production
 
 # Google Bot
@@ -24,5 +24,5 @@ User-agent: *
 Disallow: /
 
 # Sitemap
-Sitemap: https://pornsters.example.com/sitemap.xml
-Sitemap: https://pornsters.example.com/sitemap-videos.xml
+Sitemap: https://pornsters.net/sitemap.xml
+Sitemap: https://pornsters.net/sitemap-videos.xml

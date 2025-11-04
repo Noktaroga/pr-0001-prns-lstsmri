@@ -51,7 +51,48 @@ jobs:
               echo "[3] Construyendo build de producción..."
               npm run build
 
-              echo "[4] Reiniciando backend API..."
+              echo "[4] Configurando Nginx para archivos SEO..."
+              
+              # Verificar si la configuración SEO ya existe
+              if ! grep -q "application/xml" /etc/nginx/sites-available/default 2>/dev/null; then
+                echo "Agregando configuración SEO a Nginx..."
+                
+                # Crear backup de la configuración actual
+                cp /etc/nginx/sites-available/default /etc/nginx/sites-available/default.backup.$(date +%Y%m%d_%H%M%S)
+                
+                # Agregar configuración SEO línea por línea antes del último }
+                sed -i '/^}$/i\    # SEO Configuration for XML and robots.txt' /etc/nginx/sites-available/default
+                sed -i '/^}$/i\    location ~* \.xml$ {' /etc/nginx/sites-available/default
+                sed -i '/^}$/i\        add_header Content-Type "application/xml; charset=utf-8";' /etc/nginx/sites-available/default
+                sed -i '/^}$/i\        add_header Cache-Control "public, max-age=86400";' /etc/nginx/sites-available/default
+                sed -i '/^}$/i\        expires 1d;' /etc/nginx/sites-available/default
+                sed -i '/^}$/i\    }' /etc/nginx/sites-available/default
+                sed -i '/^}$/i\    ' /etc/nginx/sites-available/default
+                sed -i '/^}$/i\    location = /robots.txt {' /etc/nginx/sites-available/default
+                sed -i '/^}$/i\        add_header Content-Type "text/plain; charset=utf-8";' /etc/nginx/sites-available/default
+                sed -i '/^}$/i\        add_header Cache-Control "public, max-age=86400";' /etc/nginx/sites-available/default
+                sed -i '/^}$/i\        expires 1d;' /etc/nginx/sites-available/default
+                sed -i '/^}$/i\    }' /etc/nginx/sites-available/default
+                sed -i '/^}$/i\    ' /etc/nginx/sites-available/default
+                
+                echo "✓ Configuración SEO agregada a Nginx"
+                
+                # Validar la configuración de Nginx
+                if nginx -t; then
+                  echo "✓ Configuración de Nginx válida"
+                  systemctl reload nginx
+                  echo "✓ Nginx recargado con nueva configuración"
+                else
+                  echo "❌ Error en configuración de Nginx, restaurando backup..."
+                  cp /etc/nginx/sites-available/default.backup.* /etc/nginx/sites-available/default
+                  systemctl reload nginx
+                  echo "❌ Configuración restaurada, continuando sin cambios SEO"
+                fi
+              else
+                echo "✓ Configuración SEO ya existe en Nginx"
+              fi
+
+              echo "[5] Reiniciando backend API..."
               cd /var/app/backend
               
               # Verificar que el entorno virtual existe
