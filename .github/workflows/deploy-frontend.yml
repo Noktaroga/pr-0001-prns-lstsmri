@@ -99,13 +99,26 @@ jobs:
                 echo "DEBUG: =========================="
                 
                 echo "DEBUG: Intentando insertar configuración con sed..."
-                echo "DEBUG: Comando sed que se ejecutará:"
-                echo "sed -i '/server {/,/^}\$/{/^\$/{s/^}/&/; t; b; }; /^\$/e cat /tmp/seo-config' /etc/nginx/sites-available/default"
+                echo "DEBUG: Estrategia alternativa - insertar al final del archivo antes de la última línea"
                 
-                # Insertar antes del último } del server block
-                sed -i '/server {/,/^}$/{/^}$/{ s/^}/&/; t; b; }; /^}$/e cat /tmp/seo-config' /etc/nginx/sites-available/default
+                # Estrategia alternativa: insertar al final del archivo principal
+                # Primero verificar las últimas líneas del archivo
+                echo "DEBUG: Últimas 10 líneas del archivo actual:"
+                tail -10 /etc/nginx/sites-available/default
                 
-                echo "DEBUG: Código de salida de sed: $?"
+                # Insertar la configuración al final del archivo, antes de la última }
+                # Usar un enfoque más directo
+                cp /etc/nginx/sites-available/default /tmp/nginx-temp
+                
+                # Remover la última línea (}), agregar nuestra configuración, y volver a agregar }
+                head -n -1 /tmp/nginx-temp > /tmp/nginx-new
+                cat /tmp/seo-config >> /tmp/nginx-new
+                echo "}" >> /tmp/nginx-new
+                
+                # Aplicar el nuevo archivo
+                mv /tmp/nginx-new /etc/nginx/sites-available/default
+                
+                echo "DEBUG: Código de salida de la operación: $?"
                 echo "DEBUG: Configuración insertada. Nuevo contenido de /etc/nginx/sites-available/default:"
                 cat /etc/nginx/sites-available/default
                 echo "DEBUG: =========================="
