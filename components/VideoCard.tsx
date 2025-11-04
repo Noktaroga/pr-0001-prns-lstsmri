@@ -208,7 +208,7 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick, isInBasket
   return (
     <article
       ref={cardRef}
-      className="group/card overflow-hidden rounded-xl border border-neutral-800 bg-neutral-900 shadow-sm transition hover:shadow-md relative"
+      className="group/card overflow-hidden rounded-lg border border-neutral-800 bg-neutral-900 shadow-sm transition hover:shadow-md relative w-full"
       role="article"
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
@@ -216,7 +216,7 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick, isInBasket
       <button 
         onClick={handleBasketClick}
         aria-label={isInBasket ? "Remove from basket" : "Add to basket"}
-        className={`absolute top-2 right-2 z-10 flex items-center justify-center w-8 h-8 rounded-full transition-all duration-200
+        className={`absolute top-1.5 right-1.5 z-10 flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full transition-all duration-200
                     bg-black/50 backdrop-blur-sm text-white 
                     opacity-0 group-hover/card:opacity-100
                     hover:scale-110 hover:bg-black/70
@@ -226,26 +226,26 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick, isInBasket
       </button>
 
       <button onClick={onClick} className="block w-full text-left">
-        <div className="relative h-40 w-full bg-gradient-to-br from-neutral-800 to-neutral-700">
+        <div className="relative h-32 sm:h-36 md:h-40 w-full bg-gradient-to-br from-neutral-800 to-neutral-700">
           {isValidThumbnail && (
             <img src={currentImage} alt={title} loading="lazy" className="h-full w-full object-cover transition-opacity duration-200" />
           )}
-          <span className="absolute bottom-2 right-2 rounded bg-black/70 px-1.5 py-0.5 text-xs text-white">{duration}</span>
+          <span className="absolute bottom-1.5 right-1.5 rounded bg-black/70 px-1 py-0.5 text-xs text-white">{duration}</span>
         </div>
-        <div className="space-y-2 p-3">
-          <h3 className="line-clamp-2 text-sm font-semibold leading-snug group-hover:text-neutral-300">{title}</h3>
+        <div className="space-y-1.5 p-2 sm:p-3">
+          <h3 className="line-clamp-2 text-xs sm:text-sm font-semibold leading-snug group-hover:text-neutral-300">{title}</h3>
         
           <div className="flex flex-col gap-1 text-xs text-neutral-400">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <StarRating rating={rating} />
             </div>
-            <div className="flex items-center gap-2">
-              <span title="Votos buenos" className="text-green-600 flex items-center gap-1">👍<span>{formatShortCount(good_votes)}</span></span>
-              <span title="Votos malos" className="text-red-600 flex items-center gap-1">👎<span>{formatShortCount(bad_votes)}</span></span>
+            <div className="flex items-center gap-1.5 text-xs">
+              <span title="Votos buenos" className="text-green-600 flex items-center gap-0.5">👍<span className="hidden sm:inline">{formatShortCount(good_votes)}</span></span>
+              <span title="Votos malos" className="text-red-600 flex items-center gap-0.5">👎<span className="hidden sm:inline">{formatShortCount(bad_votes)}</span></span>
             </div>
           </div>
 
-          <div className="flex items-center text-xs opacity-70 pt-2 border-t border-neutral-800">
+          <div className="flex items-center text-xs opacity-70 pt-1.5 border-t border-neutral-800">
             {(() => {
               // Selección de idioma (puedes cambiar esto según la lógica de idioma de tu app)
               const lang = (navigator.language || '').toLowerCase().startsWith('es') ? 'es' : 'en';

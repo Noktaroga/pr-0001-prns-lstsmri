@@ -24,18 +24,34 @@ export const VirtualizedVideoGrid: React.FC<VirtualizedVideoGridProps> = ({
 	
 	// Estado para el número de columnas responsivo
 	const [responsiveColumns, setResponsiveColumns] = useState(columns);
+	
+	// Calcular row height responsivo
+	const getResponsiveRowHeight = () => {
+		const width = window.innerWidth;
+		if (width < 640) { // sm breakpoint
+			return 280; // Menor altura en móvil
+		} else if (width < 768) { // md breakpoint
+			return 320;
+		} else {
+			return rowHeight; // Altura normal en desktop
+		}
+	};
+	
+	const [responsiveRowHeight, setResponsiveRowHeight] = useState(rowHeight);
 
 	// Función para calcular columnas basado en el ancho de pantalla
 	const getResponsiveColumns = () => {
 		const width = window.innerWidth;
 		if (width < 640) { // sm breakpoint
-			return Math.min(3, columns); // Máximo 3 columnas en móvil
+			return 2; // Solo 2 columnas en móvil
 		} else if (width < 768) { // md breakpoint
-			return Math.min(4, columns);
+			return 3;
 		} else if (width < 1024) { // lg breakpoint
-			return Math.min(5, columns);
+			return 4;
+		} else if (width < 1536) { // xl breakpoint
+			return 5;
 		} else {
-			return columns; // Usar columnas originales en desktop
+			return 6; // 6 columnas solo en pantallas muy grandes (2xl+)
 		}
 	};
 
@@ -43,27 +59,29 @@ export const VirtualizedVideoGrid: React.FC<VirtualizedVideoGridProps> = ({
 	useEffect(() => {
 		const handleResize = () => {
 			setResponsiveColumns(getResponsiveColumns());
+			setResponsiveRowHeight(getResponsiveRowHeight());
 		};
 
-		// Establecer columnas iniciales
+		// Establecer valores iniciales
 		setResponsiveColumns(getResponsiveColumns());
+		setResponsiveRowHeight(getResponsiveRowHeight());
 
 		// Agregar listener para resize
 		window.addEventListener('resize', handleResize);
 		
 		// Cleanup
 		return () => window.removeEventListener('resize', handleResize);
-	}, [columns]);
+	}, [columns, rowHeight]);
 
 	const rowCount = Math.ceil(videos.length / responsiveColumns);
 	const rowVirtualizer = useVirtualizer({
 		count: rowCount,
 		getScrollElement: () => parentRef.current,
-		estimateSize: () => rowHeight,
+		estimateSize: () => responsiveRowHeight,
 		overscan: 6,
 	});
 
-	const height = rowCount * rowHeight;
+	const height = rowCount * responsiveRowHeight;
 
 	return (
 		<div
@@ -111,8 +129,8 @@ export const VirtualizedVideoGrid: React.FC<VirtualizedVideoGridProps> = ({
 								height: `${virtualRow.size}px`,
 								transform: `translateY(${virtualRow.start}px)`,
 								display: 'flex',
-								gap: '1rem',
-								padding: '0 0.5rem',
+								gap: '0.75rem', // Menos gap en mobile
+								padding: '0 0.75rem', // Menos padding en mobile
 							}}
 						>
 							{items}

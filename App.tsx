@@ -751,7 +751,7 @@ const App: React.FC = () => {
                     </div>
                   )}
                   {loading ? (
-                    <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6">
+                    <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
                       {Array.from({ length: 12 }).map((_, i) => (
                         <div key={i}><VideoCardSkeleton /></div>
                       ))}
