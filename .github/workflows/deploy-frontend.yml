@@ -62,7 +62,19 @@ jobs:
                 
                 # Crear archivo temporal con configuración
                 echo "    # SEO Configuration for XML and robots.txt" > /tmp/seo-config
-                echo "    location ~* \.xml\$ {" >> /tmp/seo-config
+                echo "    location = /sitemap.xml {" >> /tmp/seo-config
+                echo "        add_header Content-Type \"application/xml; charset=utf-8\";" >> /tmp/seo-config
+                echo "        add_header Cache-Control \"public, max-age=86400\";" >> /tmp/seo-config
+                echo "        expires 1d;" >> /tmp/seo-config
+                echo "    }" >> /tmp/seo-config
+                echo "" >> /tmp/seo-config
+                echo "    location = /sitemap-videos.xml {" >> /tmp/seo-config
+                echo "        add_header Content-Type \"application/xml; charset=utf-8\";" >> /tmp/seo-config
+                echo "        add_header Cache-Control \"public, max-age=86400\";" >> /tmp/seo-config
+                echo "        expires 1d;" >> /tmp/seo-config
+                echo "    }" >> /tmp/seo-config
+                echo "" >> /tmp/seo-config
+                echo "    location = /sitemap-categories.xml {" >> /tmp/seo-config
                 echo "        add_header Content-Type \"application/xml; charset=utf-8\";" >> /tmp/seo-config
                 echo "        add_header Cache-Control \"public, max-age=86400\";" >> /tmp/seo-config
                 echo "        expires 1d;" >> /tmp/seo-config
