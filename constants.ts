@@ -356,3 +356,85 @@ export const fetchDiverseVideosForHome = async (): Promise<{
         throw error;
     }
 };
+
+/**
+ * Busca un video específico por ID en el backend
+ */
+export const fetchVideoById = async (videoId: string): Promise<Video | null> => {
+    try {
+        // Primero intentar buscar en todas las categorías disponibles
+        const availableCategories = [
+            "/c/Oiled-22",
+            "/c/Gapes-167", 
+            "/c/AI-239",
+            "/c/Asian_Woman-32"
+        ];
+        
+        for (const category of availableCategories) {
+            try {
+                // Buscar en páginas de la categoría (hasta 5 páginas)
+                for (let page = 1; page <= 5; page++) {
+                    const res = await fetch(`/api/videos?category=${encodeURIComponent(category)}&page=${page}&size=50`);
+                    
+                    if (res.ok) {
+                        const data = await res.json();
+                        const categoryVideos = data.videos || [];
+                        
+                        // Buscar el video en esta página
+                        const foundVideo = categoryVideos.find((v: any) => v.id === videoId);
+                        if (foundVideo) {
+                            const transformedVideo = transformRawVideoToVideo(foundVideo);
+                            if (transformedVideo) {
+                                console.log(`[SUCCESS] Video ${videoId} encontrado en categoría ${category}, página ${page}`);
+                                return transformedVideo;
+                            }
+                        }
+                        
+                        // Si no hay más videos en esta página, pasar a la siguiente categoría
+                        if (!data.videos || data.videos.length < 50) {
+                            break;
+                        }
+                    }
+                }
+            } catch (error) {
+                console.warn(`Error buscando en categoría ${category}:`, error);
+                continue;
+            }
+        }
+        
+        console.log(`[INFO] Video ${videoId} no encontrado en categorías específicas, buscando en consulta general...`);
+        
+        // Si no se encuentra, hacer búsqueda general
+        const generalRes = await fetch(`/api/videos?page=1&size=200`);
+        if (generalRes.ok) {
+            const generalData = await generalRes.json();
+            let allVideos: any[] = [];
+            
+            if (typeof generalData === 'object' && !Array.isArray(generalData)) {
+                if (generalData.videos && Array.isArray(generalData.videos)) {
+                    allVideos = generalData.videos;
+                } else {
+                    allVideos = Object.values(generalData).flat();
+                }
+            } else if (Array.isArray(generalData)) {
+                allVideos = generalData;
+            }
+            
+            const foundVideo = allVideos.find((v: any) => v.id === videoId);
+            if (foundVideo) {
+                const transformedVideo = transformRawVideoToVideo(foundVideo);
+                if (transformedVideo) {
+                    console.log(`[SUCCESS] Video ${videoId} encontrado en consulta general`);
+                    return transformedVideo;
+                }
+            }
+        }
+        
+        console.log(`[WARNING] Video ${videoId} no encontrado en ninguna búsqueda`);
+        return null;
+        
+    } catch (error) {
+        console.error(`[ERROR] Error buscando video ${videoId}:`, error);
+        return null;
+    }
+};

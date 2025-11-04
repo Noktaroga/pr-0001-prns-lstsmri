@@ -27,7 +27,7 @@ import JuicyAdsVertical from "./components/JuicyAdsVertical";
 import { CategoryFilter } from "./components/CategoryFilter";
 import { Pagination } from "./components/Pagination";
 import { Home } from "./components/Home";
-import { fetchVideosAndCategories } from "./constants";
+import { fetchVideosAndCategories, fetchVideoById } from "./constants";
 import { VideoCardSkeleton } from "./components/VideoCardSkeleton";
 import { VirtualizedVideoGrid } from "./components/VirtualizedVideoGrid";
 import { Video, Category } from "./types";
@@ -64,6 +64,14 @@ const App: React.FC = () => {
   const [durationFilter, setDurationFilter] = useState<DurationFilter>('all');
   const [showSidebar, setShowSidebar] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
+  // Detectar si hay parámetro de video en URL al cargar
+  const [loadingVideoFromUrl, setLoadingVideoFromUrl] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      return params.has('video');
+    }
+    return false;
+  });
   // Paginación solo para la vista 'videos'
   // Paginación sincronizada con la URL
   const getPageFromUrl = () => {
@@ -404,7 +412,7 @@ const App: React.FC = () => {
       params.set('page', '1');
       window.history.replaceState({}, '', `/videos?${params.toString()}`);
     } else if (activeView === 'home') {
-      window.history.replaceState({}, '', '/Home');
+      window.history.replaceState({}, '', '/');
     }
   }, [activeSearchQuery, activeCat, durationFilter, activeView]);
 
@@ -416,7 +424,7 @@ const App: React.FC = () => {
       const path = window.location.pathname.toLowerCase();
       if (path.startsWith('/videos')) {
         setActiveView('videos');
-      } else if (path === '/home' || path === '/') {
+      } else if (path === '/home' || path === '/Home' || path === '/') {
         setActiveView('home');
       }
     };
@@ -431,7 +439,7 @@ const App: React.FC = () => {
       params.set('page', String(currentPage));
       window.history.replaceState({}, '', `/videos?${params.toString()}`);
     } else if (activeView === 'home') {
-      window.history.replaceState({}, '', '/Home');
+      window.history.replaceState({}, '', '/');
     }
   }, [currentPage, activeView]);
 
@@ -467,32 +475,114 @@ const App: React.FC = () => {
     trackPageView(`Video: ${video.title}`, window.location.href);
   };
 
-  // Handle browser navigation (back/forward)
+  // Función para buscar un video específico por ID en el backend
+  const searchVideoById = async (videoId: string) => {
+    try {
+      console.log(`[INFO] Buscando video ${videoId} en el backend...`);
+      
+      // Intentar buscar en consulta general amplia
+      const res = await fetch(`/api/videos?page=1&size=200`);
+      if (res.ok) {
+        const data = await res.json();
+        let allVideos: any[] = [];
+        
+        // El backend puede devolver diferentes formatos
+        if (typeof data === 'object' && !Array.isArray(data)) {
+          if (data.videos && Array.isArray(data.videos)) {
+            allVideos = data.videos;
+          } else {
+            // Formato: { "/c/categoria": [...], ... }
+            allVideos = Object.values(data).flat();
+          }
+        } else if (Array.isArray(data)) {
+          allVideos = data;
+        }
+        
+        const foundVideo = allVideos.find((v: any) => v.id === videoId);
+        if (foundVideo) {
+          // Transformar el video usando la función del constants
+          const transformedVideo = {
+            id: foundVideo.id,
+            title: foundVideo.title,
+            duration: foundVideo.duration,
+            category: foundVideo.category,
+            categoryLabel: foundVideo.category,
+            views: foundVideo.views || 0,
+            rating: foundVideo.rating || 3.5,
+            total_votes: foundVideo.total_votes || 0,
+            good_votes: foundVideo.good_votes || 0,
+            bad_votes: foundVideo.bad_votes || 0,
+            sources: foundVideo.sources || [{ quality: 'default', url: foundVideo.url }],
+            thumbnail: foundVideo.thumbnail,
+            page_url: foundVideo.page_url,
+          };
+          
+          setSelectedVideo(transformedVideo);
+          console.log(`[SUCCESS] Video encontrado en backend: ${transformedVideo.title}`);
+          document.title = `${transformedVideo.title} - PORNSTERS`;
+        } else {
+          console.warn(`[WARNING] Video ${videoId} no encontrado en backend`);
+          setSelectedVideo(null);
+          // Limpiar parámetro de video inválido
+          const params = new URLSearchParams(window.location.search);
+          params.delete('video');
+          params.delete('title');
+          window.history.replaceState({}, '', `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`);
+        }
+      }
+    } catch (error) {
+      console.error(`[ERROR] Error buscando video ${videoId}:`, error);
+      setSelectedVideo(null);
+    } finally {
+      setLoadingVideoFromUrl(false);
+    }
+  };
+
+  // Handle browser navigation (back/forward) and initial URL loading
   useEffect(() => {
-    const onPopState = (event: PopStateEvent) => {
+    const handleUrlVideoParam = () => {
       const params = new URLSearchParams(window.location.search);
       const videoId = params.get('video');
-      if (videoId) {
+      
+      console.log(`[DEBUG] handleUrlVideoParam - videoId: ${videoId}, videos.length: ${videos.length}`);
+      
+      if (videoId && videos.length > 0) {
         const found = videos.find(v => v.id === videoId);
+        console.log(`[DEBUG] Searching for video ID ${videoId} in ${videos.length} videos`);
+        
         if (found) {
           setSelectedVideo(found);
+          console.log(`[SUCCESS] Video encontrado por URL: ${found.title}`);
+          document.title = `${found.title} - PORNSTERS`;
         } else {
-          setSelectedVideo(null);
+          console.warn(`[WARNING] Video con ID ${videoId} no encontrado, intentando búsqueda específica...`);
+          
+          // Intentar búsqueda específica por ID en el backend
+          searchVideoById(videoId);
+          return; // No desactivar loading state aún
         }
-      } else {
+        // Desactivar loading state
+        setLoadingVideoFromUrl(false);
+      } else if (!videoId) {
         setSelectedVideo(null);
+        setLoadingVideoFromUrl(false);
+        document.title = 'PORNSTERS';
       }
     };
+
+    const onPopState = (event: PopStateEvent) => {
+      handleUrlVideoParam();
+    };
+
     window.addEventListener('popstate', onPopState);
-    // On mount, check if URL has video param
-    const params = new URLSearchParams(window.location.search);
-    const videoId = params.get('video');
-    if (videoId) {
-      const found = videos.find(v => v.id === videoId);
-      if (found) setSelectedVideo(found);
+    
+    // Manejar URL inicial cuando se cargan los videos
+    if (videos.length > 0) {
+      handleUrlVideoParam();
     }
+    
     return () => window.removeEventListener('popstate', onPopState);
-  }, [videos]);
+  }, [videos]); // Dependencia en videos para manejar carga inicial
 
   const handleCategorySelect = (category: string) => {
     setActiveView('videos');
@@ -527,7 +617,7 @@ const App: React.FC = () => {
       window.history.replaceState({}, '', `${newPath}${params.toString() ? '?' + params.toString() : ''}`);
     } else {
       // Home: limpiar todos los parámetros
-      newPath = '/Home';
+      newPath = '/';
       window.history.replaceState({}, '', newPath);
     }
     
@@ -540,10 +630,22 @@ const App: React.FC = () => {
   // ---------------------------
 
   // Estado de carga inicial o error de la API
-  if (loading) {
+  if (loading && !loadingVideoFromUrl) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-neutral-950 text-neutral-100">
         <p className="text-lg font-semibold">Cargando contenido…</p>
+      </div>
+    );
+  }
+
+  // Loading específico para video desde URL
+  if (loadingVideoFromUrl) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-neutral-950 text-neutral-100">
+        <div className="text-center">
+          <p className="text-lg font-semibold mb-2">Cargando video...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mx-auto"></div>
+        </div>
       </div>
     );
   }
