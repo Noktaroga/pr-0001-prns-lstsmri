@@ -53,14 +53,22 @@ jobs:
 
               echo "[4] Configurando Nginx para archivos SEO..."
               
+              echo "DEBUG: Verificando configuración actual de Nginx..."
+              echo "DEBUG: Contenido actual de /etc/nginx/sites-available/default:"
+              cat /etc/nginx/sites-available/default
+              echo "DEBUG: =========================="
+              
               # Verificar si la configuración SEO ya existe
               if ! grep -q "application/xml" /etc/nginx/sites-available/default 2>/dev/null; then
-                echo "Agregando configuración SEO a Nginx..."
+                echo "DEBUG: Configuración SEO no encontrada, agregando nueva configuración..."
                 
                 # Crear backup de la configuración actual
-                cp /etc/nginx/sites-available/default /etc/nginx/sites-available/default.backup.$(date +%Y%m%d_%H%M%S)
+                BACKUP_FILE="/etc/nginx/sites-available/default.backup.$(date +%Y%m%d_%H%M%S)"
+                cp /etc/nginx/sites-available/default "$BACKUP_FILE"
+                echo "DEBUG: Backup creado en: $BACKUP_FILE"
                 
                 # Crear archivo temporal con configuración
+                echo "DEBUG: Creando configuración temporal..."
                 echo "    # SEO Configuration for XML and robots.txt" > /tmp/seo-config
                 echo "    location = /sitemap.xml {" >> /tmp/seo-config
                 echo "        add_header Content-Type \"application/xml; charset=utf-8\";" >> /tmp/seo-config
@@ -86,63 +94,116 @@ jobs:
                 echo "        expires 1d;" >> /tmp/seo-config
                 echo "    }" >> /tmp/seo-config
                 
+                echo "DEBUG: Contenido del archivo de configuración SEO:"
+                cat /tmp/seo-config
+                echo "DEBUG: =========================="
+                
+                echo "DEBUG: Intentando insertar configuración con sed..."
+                echo "DEBUG: Comando sed que se ejecutará:"
+                echo "sed -i '/server {/,/^}\$/{/^\$/{s/^}/&/; t; b; }; /^\$/e cat /tmp/seo-config' /etc/nginx/sites-available/default"
+                
                 # Insertar antes del último } del server block
                 sed -i '/server {/,/^}$/{/^}$/{ s/^}/&/; t; b; }; /^}$/e cat /tmp/seo-config' /etc/nginx/sites-available/default
+                
+                echo "DEBUG: Código de salida de sed: $?"
+                echo "DEBUG: Configuración insertada. Nuevo contenido de /etc/nginx/sites-available/default:"
+                cat /etc/nginx/sites-available/default
+                echo "DEBUG: =========================="
                 
                 rm -f /tmp/seo-config
                 echo "✓ Configuración SEO agregada a Nginx"
                 
                 # Validar la configuración de Nginx
+                echo "DEBUG: Validando configuración de Nginx..."
                 if nginx -t; then
                   echo "✓ Configuración de Nginx válida"
+                  echo "DEBUG: Recargando Nginx..."
                   systemctl reload nginx
+                  echo "DEBUG: Código de salida del reload: $?"
                   echo "✓ Nginx recargado con nueva configuración"
+                  
+                  echo "DEBUG: Verificando inmediatamente el Content-Type después del reload..."
+                  sleep 2
+                  echo "DEBUG: Test local de sitemap.xml:"
+                  curl -I http://localhost/sitemap.xml 2>/dev/null | grep Content-Type || echo "DEBUG: No se pudo obtener Content-Type local"
+                  echo "DEBUG: Test local de robots.txt:"
+                  curl -I http://localhost/robots.txt 2>/dev/null | grep Content-Type || echo "DEBUG: No se pudo obtener Content-Type local"
                 else
-                  echo "❌ Error en configuración de Nginx, restaurando backup..."
-                  cp /etc/nginx/sites-available/default.backup.* /etc/nginx/sites-available/default
+                  echo "❌ Error en configuración de Nginx:"
+                  nginx -t
+                  echo "DEBUG: Restaurando backup..."
+                  cp "$BACKUP_FILE" /etc/nginx/sites-available/default
                   systemctl reload nginx
                   echo "❌ Configuración restaurada, continuando sin cambios SEO"
                 fi
               else
                 echo "✓ Configuración SEO ya existe en Nginx"
+                echo "DEBUG: Verificando qué configuración existe:"
+                grep -A 10 -B 2 "application/xml" /etc/nginx/sites-available/default || echo "DEBUG: No se encontró 'application/xml' a pesar de la verificación inicial"
               fi
 
               echo "[5] Reiniciando backend API..."
               cd /var/app/backend
               
+              echo "DEBUG: Estado del directorio backend antes del reinicio:"
+              ls -la /var/app/backend/
+              
               # Verificar que el entorno virtual existe
               if [ ! -d "venv" ]; then
-                echo "Entorno virtual no encontrado, creando..."
+                echo "DEBUG: Entorno virtual no encontrado, creando..."
                 python3 -m venv venv --clear
                 source venv/bin/activate
                 pip install --upgrade pip
                 pip install -r requirements.txt
               else
-                echo "Activando entorno virtual existente..."
+                echo "DEBUG: Entorno virtual encontrado, activando..."
                 source venv/bin/activate
               fi
               
+              echo "DEBUG: Deteniendo procesos PM2 anteriores..."
+              pm2 stop api || echo "DEBUG: No había proceso 'api' ejecutándose"
+              pm2 delete api || echo "DEBUG: No había proceso 'api' para eliminar"
+              
               # Reiniciar API con PM2
-              echo "Iniciando API con PM2..."
+              echo "DEBUG: Iniciando API con PM2..."
               pm2 start app.py --name api --interpreter ./venv/bin/python3 --instances 1
+              echo "DEBUG: Código de salida de PM2 start: $?"
               pm2 save
               
               # Verificar que la API esté funcionando
-              echo "Verificando API..."
+              echo "DEBUG: Verificando API..."
               sleep 3
               for i in {1..15}; do
+                echo "DEBUG: Intento $i de verificación de API..."
                 if curl -s http://localhost:3001/health > /dev/null 2>&1; then
                   echo "✓ Backend API funcionando correctamente"
+                  echo "DEBUG: Respuesta de health check:"
+                  curl -s http://localhost:3001/health
                   break
                 fi
-                echo "Esperando API... ($i/15)"
+                echo "DEBUG: Esperando API... ($i/15)"
+                if [ $i -eq 15 ]; then
+                  echo "DEBUG: API no responde después de 15 intentos"
+                  echo "DEBUG: Estado de PM2:"
+                  pm2 status
+                  echo "DEBUG: Logs de PM2:"
+                  pm2 logs api --lines 10 || echo "DEBUG: No hay logs de PM2 disponibles"
+                fi
                 sleep 2
               done
 
               echo "[5] Recargando nginx..."
+              echo "DEBUG: Validando configuración antes del reload final..."
               nginx -t && systemctl reload nginx
+              echo "DEBUG: Código de salida del reload final: $?"
 
               echo "[6] Verificación final..."
+              echo "DEBUG: Tests finales de Content-Type desde el servidor:"
+              echo "DEBUG: sitemap.xml local:"
+              curl -I http://localhost/sitemap.xml 2>/dev/null | head -10 || echo "DEBUG: Error en test local sitemap.xml"
+              echo "DEBUG: robots.txt local:"
+              curl -I http://localhost/robots.txt 2>/dev/null | head -10 || echo "DEBUG: Error en test local robots.txt"
+              
               if curl -s http://localhost:3001/health > /dev/null 2>&1; then
                 echo "✓ Backend accesible desde frontend"
               else
