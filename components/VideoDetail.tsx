@@ -50,7 +50,7 @@ function generateVideoSchema(video: Video): string {
         "name": video.title,
         "description": generateDescription(video),
         "thumbnailUrl": video.thumbnail || '',
-        "uploadDate": new Date().toISOString().split('T')[0], // Use current date as fallback
+        "uploadDate": new Date().toISOString(), // Formato ISO completo con zona horaria
         "duration": convertDurationToISO(video.duration || '0:00'),
         "contentUrl": `${window.location.origin}/video/${video.id}`,
         "embedUrl": `${window.location.origin}/video/${video.id}`,
@@ -68,8 +68,8 @@ function generateVideoSchema(video: Video): string {
         ],
         "aggregateRating": video.rating && video.total_votes ? {
             "@type": "AggregateRating",
-            "ratingValue": video.rating,
-            "ratingCount": video.total_votes,
+            "ratingValue": Math.min(Math.max(parseFloat(video.rating.toString()) || 3.5, 1), 5), // Asegurar rango 1-5
+            "ratingCount": parseInt(video.total_votes.toString(), 10),
             "bestRating": 5,
             "worstRating": 1
         } : undefined,
@@ -82,6 +82,28 @@ function generateVideoSchema(video: Video): string {
     const cleanSchema = JSON.parse(JSON.stringify(schema));
     
     return JSON.stringify(cleanSchema, null, 2);
+}
+
+// Función para generar metadatos Open Graph y SEO
+function generateSeoMetadata(video: Video) {
+    const categoryName = video.categoryLabel || video.category;
+    const safeRating = Math.min(Math.max(parseFloat(video.rating?.toString() || '3.5'), 1), 5).toFixed(1);
+    const description = `Watch ${video.title} - ${categoryName} video with ${video.duration} duration. Rated ${safeRating}/5 with ${video.total_votes} votes.`;
+    
+    return {
+        title: `${video.title} - PORNSTERS`,
+        description: description.substring(0, 160), // Límite de meta description
+        ogTitle: video.title,
+        ogDescription: description.substring(0, 200), // Límite de OG description
+        ogType: 'video.other',
+        ogUrl: `${window.location.origin}${window.location.pathname}${window.location.search}`,
+        ogImage: video.thumbnail || '',
+        ogVideoDuration: video.duration || '',
+        twitterCard: 'summary_large_image',
+        twitterTitle: video.title,
+        twitterDescription: description.substring(0, 140),
+        twitterImage: video.thumbnail || ''
+    };
 }
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
@@ -182,8 +204,9 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
   const { id, title, category, rating, total_votes, good_votes, bad_votes, duration } = video;
   const sources = Array.isArray(video.sources) && video.sources.length > 0 ? video.sources : [{ quality: 'default', url: '' }];
   
-  // Schema.org VideoObject - Agregar al head del documento
+  // Schema.org VideoObject y metadatos SEO - Agregar al head del documento
   useEffect(() => {
+    // 1. Generar y agregar Schema.org JSON-LD
     const schemaScript = document.createElement('script');
     schemaScript.type = 'application/ld+json';
     schemaScript.textContent = generateVideoSchema(video);
@@ -198,7 +221,44 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
     // Add new schema
     document.head.appendChild(schemaScript);
     
+    // 2. Generar y agregar metadatos SEO
+    const metadata = generateSeoMetadata(video);
+    
+    // Helper function to set or update meta tag
+    const setMetaTag = (name: string, content: string, property = false) => {
+      const attribute = property ? 'property' : 'name';
+      let meta = document.querySelector(`meta[${attribute}="${name}"]`);
+      if (!meta) {
+        meta = document.createElement('meta');
+        meta.setAttribute(attribute, name);
+        document.head.appendChild(meta);
+      }
+      meta.setAttribute('content', content);
+    };
+    
+    // Update title
+    document.title = metadata.title;
+    
+    // Set meta description
+    setMetaTag('description', metadata.description);
+    
+    // Set Open Graph tags
+    setMetaTag('og:title', metadata.ogTitle, true);
+    setMetaTag('og:description', metadata.ogDescription, true);
+    setMetaTag('og:type', metadata.ogType, true);
+    setMetaTag('og:url', metadata.ogUrl, true);
+    setMetaTag('og:image', metadata.ogImage, true);
+    setMetaTag('og:video:duration', metadata.ogVideoDuration, true);
+    setMetaTag('og:site_name', 'PORNSTERS', true);
+    
+    // Set Twitter Card tags
+    setMetaTag('twitter:card', metadata.twitterCard);
+    setMetaTag('twitter:title', metadata.twitterTitle);
+    setMetaTag('twitter:description', metadata.twitterDescription);
+    setMetaTag('twitter:image', metadata.twitterImage);
+    
     console.log('[VideoDetail] Schema.org VideoObject added:', JSON.parse(schemaScript.textContent));
+    console.log('[VideoDetail] SEO metadata updated:', metadata);
     
     // Cleanup when component unmounts or video changes
     return () => {
@@ -206,6 +266,11 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
       if (currentSchema && document.head.contains(currentSchema)) {
         document.head.removeChild(currentSchema);
       }
+      
+      // Reset title to default
+      document.title = 'PORNSTERS';
+      
+      // Note: We don't remove meta tags on cleanup as they might be used by other components
     };
   }, [video]);
   

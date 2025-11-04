@@ -433,11 +433,16 @@ const App: React.FC = () => {
       setCurrentPage(getPageFromUrl());
       // Cambiar vista según path
       const path = window.location.pathname.toLowerCase();
+      const params = new URLSearchParams(window.location.search);
+      const hasVideoParam = params.has('video');
+      
       if (path.startsWith('/videos')) {
         setActiveView('videos');
-      } else if (path === '/home' || path === '/Home' || path === '/') {
+      } else if ((path === '/home' || path === '/Home' || path === '/') && !hasVideoParam) {
+        // Solo cambiar a home si NO hay parámetro de video
         setActiveView('home');
       }
+      // Si hay parámetro de video, no cambiar la vista automáticamente
     };
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
