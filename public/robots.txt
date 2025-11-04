@@ -1,5 +1,5 @@
 # Robots.txt for https://pornsters.example.com
-# Generated on: 2025-11-04T19:50:55.411Z
+# Generated on: 2025-11-04T20:46:21.625Z
 # Environment: production
 
 # Google Bot
