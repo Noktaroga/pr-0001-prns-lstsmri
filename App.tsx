@@ -20,6 +20,7 @@ import { initGA, trackPageView, trackVideoPlay, trackCategorySelect, trackSearch
 import { Header } from "./components/Header";
 import { Sidebar } from "./components/Sidebar";
 import DICTIONARY_ENG from "./dictionaries/dictionary-eng";
+import KeyboardSecurity from "./components/KeyboardSecurity";
 import { Footer } from "./components/Footer";
 import { VideoCard } from "./components/VideoCard";
 import { AdSlot } from "./components/AdSlot";
@@ -669,6 +670,9 @@ const App: React.FC = () => {
 
   return (
   <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col" style={{ fontFamily: 'Inter, Segoe UI, Arial, sans-serif' }}>
+      {/* Componente de seguridad del teclado */}
+      <KeyboardSecurity />
+      
       <Header
         onToggleSidebar={() => setShowSidebar((s) => !s)}
         query={query}
