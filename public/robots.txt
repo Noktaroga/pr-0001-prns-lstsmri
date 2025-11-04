@@ -1,0 +1,28 @@
+# Robots.txt for https://pornsters.example.com
+# Generated on: 2025-11-04T19:50:55.411Z
+# Environment: production
+
+# Google Bot
+User-agent: Googlebot
+Allow: /videos/
+Allow: /categories/
+Disallow: /user/
+Disallow: /private/
+Crawl-delay: 1
+
+# Bing Bot
+User-agent: Bingbot
+Allow: /videos/
+Allow: /categories/
+Disallow: /user/
+Disallow: /private/
+Disallow: /admin/
+Crawl-delay: 2
+
+# Block all other bots
+User-agent: *
+Disallow: /
+
+# Sitemap
+Sitemap: https://pornsters.example.com/sitemap.xml
+Sitemap: https://pornsters.example.com/sitemap-videos.xml

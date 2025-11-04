@@ -5,8 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "build": "npm run generate:robots && vite build",
+    "preview": "vite preview",
+    "generate:robots": "node scripts/generate-robots.js",
+    "generate:robots:preview": "node scripts/generate-robots.js --preview"
   },
   "dependencies": {
     "@tanstack/react-virtual": "^3.13.12",
