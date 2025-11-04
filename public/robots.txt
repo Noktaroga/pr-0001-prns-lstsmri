@@ -1,28 +1,7 @@
-# Robots.txt for https://pornsters.net
-# Generated on: 2025-11-04T20:56:49.979Z
-# Environment: production
+# Robots.txt for https://yoursite.com
+# Generated on: 2025-11-04T21:59:39.109Z
+# Environment: development
 
-# Google Bot
-User-agent: Googlebot
-Allow: /videos/
-Allow: /categories/
-Disallow: /user/
-Disallow: /private/
-Crawl-delay: 1
-
-# Bing Bot
-User-agent: Bingbot
-Allow: /videos/
-Allow: /categories/
-Disallow: /user/
-Disallow: /private/
-Disallow: /admin/
-Crawl-delay: 2
-
-# Block all other bots
+# Development/Staging - Block all crawlers
 User-agent: *
 Disallow: /
-
-# Sitemap
-Sitemap: https://pornsters.net/sitemap.xml
-Sitemap: https://pornsters.net/sitemap-videos.xml

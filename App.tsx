@@ -419,7 +419,11 @@ const App: React.FC = () => {
       params.set('page', '1');
       window.history.replaceState({}, '', `/videos?${params.toString()}`);
     } else if (activeView === 'home') {
-      window.history.replaceState({}, '', '/');
+      // No sobrescribir URL si hay parámetro de video (evita romper deep links)
+      const params = new URLSearchParams(window.location.search);
+      if (!params.has('video')) {
+        window.history.replaceState({}, '', '/');
+      }
     }
   }, [activeSearchQuery, activeCat, durationFilter, activeView]);
 
@@ -446,7 +450,11 @@ const App: React.FC = () => {
       params.set('page', String(currentPage));
       window.history.replaceState({}, '', `/videos?${params.toString()}`);
     } else if (activeView === 'home') {
-      window.history.replaceState({}, '', '/');
+      // No sobrescribir URL si hay parámetro de video (evita romper deep links)
+      const params = new URLSearchParams(window.location.search);
+      if (!params.has('video')) {
+        window.history.replaceState({}, '', '/');
+      }
     }
   }, [currentPage, activeView]);
 
@@ -570,6 +578,12 @@ const App: React.FC = () => {
         }
         // Desactivar loading state
         setLoadingVideoFromUrl(false);
+      } else if (videoId && videos.length === 0) {
+        // Caso especial: hay videoId pero videos aún no se han cargado
+        // Buscar directamente en backend sin esperar
+        console.log(`[INFO] Buscando video ${videoId} directamente en backend (videos no cargados aún)...`);
+        searchVideoById(videoId);
+        return; // Mantener loading state
       } else if (!videoId) {
         setSelectedVideo(null);
         setLoadingVideoFromUrl(false);
@@ -583,13 +597,11 @@ const App: React.FC = () => {
 
     window.addEventListener('popstate', onPopState);
     
-    // Manejar URL inicial cuando se cargan los videos
-    if (videos.length > 0) {
-      handleUrlVideoParam();
-    }
+    // Ejecutar inmediatamente al montar el componente
+    handleUrlVideoParam();
     
     return () => window.removeEventListener('popstate', onPopState);
-  }, [videos]); // Dependencia en videos para manejar carga inicial
+  }, [videos]); // Dependencia en videos para re-ejecutar cuando se cargan
 
   const handleCategorySelect = (category: string) => {
     setActiveView('videos');
