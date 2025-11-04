@@ -1,0 +1,7 @@
+# Robots.txt for https://yoursite.com
+# Generated on: 2025-11-04T22:36:27.913Z
+# Environment: development
+
+# Development/Staging - Block all crawlers
+User-agent: *
+Disallow: /

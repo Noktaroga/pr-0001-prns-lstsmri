@@ -1,0 +1,28 @@
+{
+  "name": "video-site-template",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "npm run generate:seo && vite build",
+    "preview": "vite preview",
+    "generate:robots": "node scripts/generate-robots.js",
+    "generate:robots:preview": "node scripts/generate-robots.js --preview",
+    "generate:seo": "node scripts/generate-seo.js",
+    "generate:seo:prod": "node scripts/generate-seo.js --env production"
+  },
+  "dependencies": {
+    "@tanstack/react-virtual": "^3.13.12",
+    "gtag": "^1.0.1",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "puppeteer": "^24.28.0",
+    "typescript": "~5.8.2",
+    "vite": "^6.2.0"
+  }
+}

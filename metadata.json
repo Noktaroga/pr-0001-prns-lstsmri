@@ -1,0 +1,5 @@
+{
+  "name": "Video Site Template",
+  "description": "A responsive and accessible video platform template built with React and Tailwind CSS, featuring light/dark modes, search, filtering, and a modal player.",
+  "requestFramePermissions": []
+}

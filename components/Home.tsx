@@ -1,0 +1,262 @@
+
+import React, { useEffect, useState } from 'react';
+import { Video } from '../types';
+import { HeroSlider } from './HeroSlider';
+import { VideoCarousel } from './VideoCarousel';
+import JuicyAdsHorizontal from './JuicyAdsHorizontal';
+import { CATEGORY_LIST, fetchDiverseVideosForHome } from '../constants';
+import { VideoCardSkeleton } from './VideoCardSkeleton';
+
+interface HomeProps {
+    videos: Video[]; // Mantenemos esta prop pero la usaremos como fallback
+    onVideoSelect: (video: Video) => void;
+    basketItems: string[];
+    onToggleBasketItem: (videoId: string) => void;
+    onCategorySelect: (category: string) => void;
+}
+
+export const Home: React.FC<HomeProps> = ({ videos: fallbackVideos, onVideoSelect, basketItems, onToggleBasketItem, onCategorySelect }) => {
+    const [diverseVideos, setDiverseVideos] = useState<Video[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
+    const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+    const [isLoadingInProgress, setIsLoadingInProgress] = useState(false); // Evitar llamadas múltiples
+    
+    // Función para cargar videos diversos
+    const loadDiverseVideos = async (isRefresh = false) => {
+        // Evitar múltiples llamadas simultáneas
+        if (isLoadingInProgress) {
+            return;
+        }
+        
+        try {
+            setIsLoadingInProgress(true);
+            
+            if (isRefresh) {
+                setRefreshing(true);
+            } else {
+                if (hasLoadedOnce) {
+                    return; // Evitar cargas múltiples
+                }
+                setLoading(true);
+            }
+            
+            const { videos: newVideos } = await fetchDiverseVideosForHome();
+            
+            // Solo actualizar si obtuvimos videos válidos
+            if (newVideos.length > 10) {
+                setDiverseVideos(newVideos);
+                setHasLoadedOnce(true);
+            } else {
+                if (fallbackVideos.length > 0) {
+                    setDiverseVideos(fallbackVideos);
+                    setHasLoadedOnce(true);
+                }
+            }
+            
+        } catch (error) {
+            console.error('[ERROR] Error al cargar videos:', error);
+            if (fallbackVideos.length > 0) {
+                setDiverseVideos(fallbackVideos);
+                setHasLoadedOnce(true);
+            }
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
+            setIsLoadingInProgress(false);
+        }
+    };
+    
+    // Cargar videos diversos solo al montar
+    useEffect(() => {
+        if (!hasLoadedOnce) {
+            loadDiverseVideos();
+        }
+    }, []); // Sin dependencias para evitar bucle infinito
+    
+    // Usar videos diversos si están disponibles, sino usar fallback
+    const videos = diverseVideos.length > 0 ? diverseVideos : fallbackVideos;
+    
+    // Helper para mezclar un array
+    function shuffle<T>(array: T[]): T[] {
+        const arr = [...array];
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+    }
+
+    // Helper para seleccionar videos diversos sin repetir IDs entre secciones
+    function selectDiverseVideos(
+        availableVideos: Video[], 
+        usedIds: Set<string>, 
+        count: number,
+        priorityFn?: (a: Video, b: Video) => number
+    ): Video[] {
+        // Filtrar videos no usados
+        const unusedVideos = availableVideos.filter(v => !usedIds.has(v.id));
+        
+        if (unusedVideos.length === 0) return [];
+        
+        // Aplicar función de prioridad si se proporciona
+        let sortedVideos = unusedVideos;
+        if (priorityFn) {
+            sortedVideos = [...unusedVideos].sort(priorityFn);
+        }
+        
+        // Agrupar por categoría para asegurar diversidad
+        const videosByCategory: { [key: string]: Video[] } = {};
+        sortedVideos.forEach(video => {
+            if (!videosByCategory[video.category]) {
+                videosByCategory[video.category] = [];
+            }
+            videosByCategory[video.category].push(video);
+        });
+        
+        // Obtener categorías disponibles y mezclarlas
+        const availableCategories = shuffle(Object.keys(videosByCategory));
+        
+        const result: Video[] = [];
+        let categoryIndex = 0;
+        let roundIndex = 0;
+        
+        // Seleccionar videos alternando categorías para máxima diversidad
+        while (result.length < count && availableCategories.length > 0) {
+            const category = availableCategories[categoryIndex % availableCategories.length];
+            const categoryVideos = videosByCategory[category];
+            
+            if (categoryVideos && categoryVideos.length > roundIndex) {
+                const video = categoryVideos[roundIndex];
+                if (!usedIds.has(video.id)) {
+                    result.push(video);
+                    usedIds.add(video.id);
+                }
+            }
+            
+            categoryIndex++;
+            
+            // Si hemos pasado por todas las categorías, ir a la siguiente ronda
+            if (categoryIndex % availableCategories.length === 0) {
+                roundIndex++;
+                // Si no hay más videos en ninguna categoría, salir
+                const hasMoreVideos = availableCategories.some(cat => 
+                    videosByCategory[cat] && videosByCategory[cat].length > roundIndex
+                );
+                if (!hasMoreVideos) break;
+            }
+        }
+        
+        return result;
+    }
+
+    // Set global para rastrear videos usados entre todas las secciones
+    const globalUsedIds = new Set<string>();
+
+    // 1. HeroSlider: 5 videos más impactantes de diferentes categorías
+    const heroVideos = selectDiverseVideos(
+        videos,
+        globalUsedIds,
+        5,
+        (a, b) => {
+            const scoreA = (a.views || 0) * (a.rating || 0);
+            const scoreB = (b.views || 0) * (b.rating || 0);
+            return scoreB - scoreA;
+        }
+    );
+
+    // 2. Most Viewed: 9 videos con más vistas (diferentes al hero)
+    const mostViewedVideos = selectDiverseVideos(
+        videos,
+        globalUsedIds,
+        9,
+        (a, b) => (b.views || 0) - (a.views || 0)
+    );
+
+    // 3. Recommended: 9 videos con mejor rating (diferentes a los anteriores)  
+    const recommendedVideos = selectDiverseVideos(
+        videos,
+        globalUsedIds,
+        9,
+        (a, b) => {
+            // Priorizar videos con buen balance de rating y votos
+            const scoreA = (a.rating || 0) * Math.log((a.good_votes || 0) + 1);
+            const scoreB = (b.rating || 0) * Math.log((b.good_votes || 0) + 1);
+            return scoreB - scoreA;
+        }
+    );
+
+    // Debug simple solo cuando hay cambios
+    useEffect(() => {
+        if (videos.length < 23 && videos.length > 0) {
+            console.warn(`Solo ${videos.length} videos disponibles`);
+        }
+        if (heroVideos.length > 0) {
+            console.log(`Videos: Hero=${heroVideos.length}, MostViewed=${mostViewedVideos.length}, Recommended=${recommendedVideos.length}`);
+        }
+    }, [videos.length, heroVideos.length, mostViewedVideos.length, recommendedVideos.length]);
+
+    return (
+        <main className="pt-6 pb-0">
+            
+            {loading ? (
+                // Mostrar skeletons mientras carga
+                <div className="space-y-8">
+                    {/* Hero Slider Skeleton */}
+                    <div className="h-64 md:h-80 lg:h-96 bg-neutral-800 rounded-xl animate-pulse"></div>
+                    
+                    {/* Most Viewed Skeleton */}
+                    <div className="space-y-4">
+                        <div className="h-6 bg-neutral-800 rounded w-32 mx-4 sm:mx-6 lg:mx-8 animate-pulse"></div>
+                        <div className="flex gap-4 px-4 sm:px-6 lg:px-8 overflow-hidden">
+                            {Array.from({ length: 6 }).map((_, i) => (
+                                <div key={i} className="w-60 sm:w-64 md:w-72 flex-shrink-0">
+                                    <VideoCardSkeleton />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                    
+                    {/* Recommended Skeleton */}
+                    <div className="space-y-4">
+                        <div className="h-6 bg-neutral-800 rounded w-36 mx-4 sm:mx-6 lg:mx-8 animate-pulse"></div>
+                        <div className="flex gap-4 px-4 sm:px-6 lg:px-8 overflow-hidden">
+                            {Array.from({ length: 6 }).map((_, i) => (
+                                <div key={i} className="w-60 sm:w-64 md:w-72 flex-shrink-0">
+                                    <VideoCardSkeleton />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            ) : (
+                // Contenido normal una vez cargado
+                <div className={refreshing ? 'opacity-75 transition-opacity duration-300' : ''}>
+                    {heroVideos.length > 0 && 
+                        <HeroSlider 
+                            videos={heroVideos} 
+                            onVideoSelect={onVideoSelect} 
+                            basketItems={basketItems}
+                            onToggleBasketItem={onToggleBasketItem}
+                            onCategorySelect={onCategorySelect}
+                        />
+                    }
+                    <VideoCarousel 
+                        title="Most viewed" 
+                        videos={mostViewedVideos} 
+                        onVideoSelect={onVideoSelect} 
+                        basketItems={basketItems}
+                        onToggleBasketItem={onToggleBasketItem}
+                    />
+                    <VideoCarousel 
+                        title="Recommended" 
+                        videos={recommendedVideos} 
+                        onVideoSelect={onVideoSelect} 
+                        basketItems={basketItems}
+                        onToggleBasketItem={onToggleBasketItem}
+                    />
+                </div>
+            )}
+        </main>
+    );
+};
