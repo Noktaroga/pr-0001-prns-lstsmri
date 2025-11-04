@@ -60,21 +60,24 @@ jobs:
                 # Crear backup de la configuración actual
                 cp /etc/nginx/sites-available/default /etc/nginx/sites-available/default.backup.$(date +%Y%m%d_%H%M%S)
                 
-                # Agregar configuración SEO línea por línea antes del último }
-                sed -i '/^}$/i\    # SEO Configuration for XML and robots.txt' /etc/nginx/sites-available/default
-                sed -i '/^}$/i\    location ~* \.xml$ {' /etc/nginx/sites-available/default
-                sed -i '/^}$/i\        add_header Content-Type "application/xml; charset=utf-8";' /etc/nginx/sites-available/default
-                sed -i '/^}$/i\        add_header Cache-Control "public, max-age=86400";' /etc/nginx/sites-available/default
-                sed -i '/^}$/i\        expires 1d;' /etc/nginx/sites-available/default
-                sed -i '/^}$/i\    }' /etc/nginx/sites-available/default
-                sed -i '/^}$/i\    ' /etc/nginx/sites-available/default
-                sed -i '/^}$/i\    location = /robots.txt {' /etc/nginx/sites-available/default
-                sed -i '/^}$/i\        add_header Content-Type "text/plain; charset=utf-8";' /etc/nginx/sites-available/default
-                sed -i '/^}$/i\        add_header Cache-Control "public, max-age=86400";' /etc/nginx/sites-available/default
-                sed -i '/^}$/i\        expires 1d;' /etc/nginx/sites-available/default
-                sed -i '/^}$/i\    }' /etc/nginx/sites-available/default
-                sed -i '/^}$/i\    ' /etc/nginx/sites-available/default
+                # Crear archivo temporal con configuración
+                echo "    # SEO Configuration for XML and robots.txt" > /tmp/seo-config
+                echo "    location ~* \.xml\$ {" >> /tmp/seo-config
+                echo "        add_header Content-Type \"application/xml; charset=utf-8\";" >> /tmp/seo-config
+                echo "        add_header Cache-Control \"public, max-age=86400\";" >> /tmp/seo-config
+                echo "        expires 1d;" >> /tmp/seo-config
+                echo "    }" >> /tmp/seo-config
+                echo "" >> /tmp/seo-config
+                echo "    location = /robots.txt {" >> /tmp/seo-config
+                echo "        add_header Content-Type \"text/plain; charset=utf-8\";" >> /tmp/seo-config
+                echo "        add_header Cache-Control \"public, max-age=86400\";" >> /tmp/seo-config
+                echo "        expires 1d;" >> /tmp/seo-config
+                echo "    }" >> /tmp/seo-config
                 
+                # Insertar antes del último } del server block
+                sed -i '/server {/,/^}$/{/^}$/{ s/^}/&/; t; b; }; /^}$/e cat /tmp/seo-config' /etc/nginx/sites-available/default
+                
+                rm -f /tmp/seo-config
                 echo "✓ Configuración SEO agregada a Nginx"
                 
                 # Validar la configuración de Nginx
