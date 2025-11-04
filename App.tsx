@@ -707,35 +707,12 @@ const App: React.FC = () => {
                       <h2 className="text-lg font-semibold">
                         {activeSearchQuery ? `Resultados para "${activeSearchQuery}"` : 'Videos por categoría'}
                       </h2>
-                      {activeSearchQuery && searchType && (
-                        <div className="flex items-center gap-2">
-                          <span className={`px-2 py-1 text-xs rounded-full ${
-                            searchType === 'exact' 
-                              ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
-                              : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                          }`}>
-                            {searchType === 'exact' ? '🎯 Búsqueda exacta' : '🧠 Búsqueda inteligente'}
-                          </span>
-                          <button
-                            onClick={() => {
-                              setActiveSearchQuery('');
-                              setQuery('');
-                              setSearchType(null);
-                            }}
-                            className="px-3 py-1 text-xs rounded-md border border-red-500 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-all duration-300"
-                            style={{
-                              boxShadow: '0 0 5px rgba(239, 68, 68, 0.3)',
-                            }}
-                          >
-                            Limpiar búsqueda
-                          </button>
-                        </div>
-                      )}
-                      {activeSearchQuery && !searchType && (
+                      {activeSearchQuery && (
                         <button
                           onClick={() => {
                             setActiveSearchQuery('');
                             setQuery('');
+                            setSearchType(null);
                           }}
                           className="px-3 py-1 text-xs rounded-md border border-red-500 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-all duration-300"
                           style={{
@@ -795,14 +772,6 @@ const App: React.FC = () => {
                       {activeSearchQuery ? (
                         <div className="space-y-4">
                           <p className="text-lg">No se encontraron resultados para "{activeSearchQuery}"</p>
-                          {searchType && (
-                            <p className="text-sm text-neutral-400">
-                              {searchType === 'exact' 
-                                ? '🎯 Se intentó búsqueda exacta primero, pero no se encontraron coincidencias exactas.'
-                                : '🧠 Se utilizó búsqueda inteligente, pero no se encontraron coincidencias relevantes.'
-                              }
-                            </p>
-                          )}
                           <p className="text-sm">Intenta con otros términos de búsqueda o explora nuestras categorías.</p>
                           <button
                             onClick={() => {

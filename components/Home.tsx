@@ -4,146 +4,292 @@ import { Video } from '../types';
 import { HeroSlider } from './HeroSlider';
 import { VideoCarousel } from './VideoCarousel';
 import JuicyAdsHorizontal from './JuicyAdsHorizontal';
-import { CATEGORY_LIST } from '../constants';
+import { CATEGORY_LIST, fetchDiverseVideosForHome } from '../constants';
 import { VideoCardSkeleton } from './VideoCardSkeleton';
 
 interface HomeProps {
-    videos: Video[];
+    videos: Video[]; // Mantenemos esta prop pero la usaremos como fallback
     onVideoSelect: (video: Video) => void;
     basketItems: string[];
     onToggleBasketItem: (videoId: string) => void;
     onCategorySelect: (category: string) => void;
 }
 
-export const Home: React.FC<HomeProps> = ({ videos, onVideoSelect, basketItems, onToggleBasketItem, onCategorySelect }) => {
-    // DEBUG: Mostrar categorías y conteo de videos por categoría
-    if (typeof window !== 'undefined') {
-        const catCount: Record<string, number> = {};
-        videos.forEach(v => {
-            catCount[v.category] = (catCount[v.category] || 0) + 1;
-        });
-        // eslint-disable-next-line no-console
-        console.log('[DEBUG] Categorías detectadas en videos:', catCount);
-    }
+export const Home: React.FC<HomeProps> = ({ videos: fallbackVideos, onVideoSelect, basketItems, onToggleBasketItem, onCategorySelect }) => {
+    const [diverseVideos, setDiverseVideos] = useState<Video[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
+    const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+    const [isLoadingInProgress, setIsLoadingInProgress] = useState(false); // Evitar llamadas múltiples
     
-
-    // HeroSlider: hasta 1 video top por categoría real, luego rellenar con los más vistos globales
-    let featuredVideos: Video[] = [];
-    const usedFeaturedIds = new Set<string>();
-    const categoriesInBackend: string[] = Array.from(new Set(videos.map(v => v.category)));
-    categoriesInBackend.forEach(cat => {
-        const catVideos = videos.filter(v => v.category === cat);
-        if (catVideos.length > 0) {
-            const sorted = [...catVideos].sort((a, b) => (b.views || 0) - (a.views || 0));
-            if (!usedFeaturedIds.has(sorted[0].id)) {
-                featuredVideos.push(sorted[0]);
-                usedFeaturedIds.add(sorted[0].id);
-            }
+    // Función para cargar videos diversos
+    const loadDiverseVideos = async (isRefresh = false) => {
+        // Evitar múltiples llamadas simultáneas
+        if (isLoadingInProgress) {
+            return;
         }
-    });
-    if (featuredVideos.length < 5) {
-        const globalSorted = [...videos].sort((a, b) => (b.views || 0) - (a.views || 0));
-        for (const v of globalSorted) {
-            if (featuredVideos.length >= 5) break;
-            if (!usedFeaturedIds.has(v.id)) {
-                featuredVideos.push(v);
-                usedFeaturedIds.add(v.id);
+        
+        try {
+            setIsLoadingInProgress(true);
+            
+            if (isRefresh) {
+                setRefreshing(true);
+            } else {
+                if (hasLoadedOnce) {
+                    return; // Evitar cargas múltiples
+                }
+                setLoading(true);
             }
-        }
-    }
-    featuredVideos = featuredVideos.slice(0, 5);
-
-        // Helper para mezclar un array
-        function shuffle<T>(array: T[]): T[] {
-            const arr = [...array];
-            for (let i = arr.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [arr[i], arr[j]] = [arr[j], arr[i]];
-            }
-            return arr;
-        }
-
-    // Detectar categorías presentes en los videos actuales (ya definido arriba)
-    const numCategories = categoriesInBackend.length;
-
-    // Helper para seleccionar videos por categoría
-    function selectVideosByCategory(sortedVideos: Video[], maxPerCategory: number, maxTotal: number) {
-        const result: Video[] = [];
-        const usedIds = new Set<string>();
-        // Creamos un mapa de categoría a videos
-        const catMap: { [key: string]: Video[] } = {};
-        categoriesInBackend.forEach((cat: string) => {
-            catMap[cat] = sortedVideos.filter(v => v.category === cat && !usedIds.has(v.id));
-        });
-        // Seleccionamos por rondas: 1er video de cada categoría, luego el 2do, etc.
-        let round = 0;
-        while (result.length < maxTotal && round < maxPerCategory) {
-            for (const cat of categoriesInBackend) {
-                const catVideos = catMap[cat];
-                if (catVideos && catVideos.length > round) {
-                    const v = catVideos[round];
-                    if (!usedIds.has(v.id)) {
-                        result.push(v);
-                        usedIds.add(v.id);
-                        if (result.length >= maxTotal) break;
-                    }
+            
+            const { videos: newVideos } = await fetchDiverseVideosForHome();
+            
+            // Solo actualizar si obtuvimos videos válidos
+            if (newVideos.length > 10) {
+                setDiverseVideos(newVideos);
+                setHasLoadedOnce(true);
+            } else {
+                if (fallbackVideos.length > 0) {
+                    setDiverseVideos(fallbackVideos);
+                    setHasLoadedOnce(true);
                 }
             }
-            round++;
+            
+        } catch (error) {
+            console.error('[ERROR] Error al cargar videos:', error);
+            if (fallbackVideos.length > 0) {
+                setDiverseVideos(fallbackVideos);
+                setHasLoadedOnce(true);
+            }
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
+            setIsLoadingInProgress(false);
         }
-        // Si faltan, rellenar con los globales
-        for (const v of sortedVideos) {
-            if (result.length >= maxTotal) break;
-            if (!usedIds.has(v.id)) {
-                result.push(v);
-                usedIds.add(v.id);
+    };
+    
+    // Cargar videos diversos solo al montar
+    useEffect(() => {
+        if (!hasLoadedOnce) {
+            loadDiverseVideos();
+        }
+    }, []); // Sin dependencias para evitar bucle infinito
+    
+    // Función para refrescar contenido
+    const handleRefresh = () => {
+        if (!loading && !refreshing) {
+            loadDiverseVideos(true);
+        }
+    };
+    
+    // Usar videos diversos si están disponibles, sino usar fallback
+    const videos = diverseVideos.length > 0 ? diverseVideos : fallbackVideos;
+    
+    // Helper para mezclar un array
+    function shuffle<T>(array: T[]): T[] {
+        const arr = [...array];
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+    }
+
+    // Helper para seleccionar videos diversos sin repetir IDs entre secciones
+    function selectDiverseVideos(
+        availableVideos: Video[], 
+        usedIds: Set<string>, 
+        count: number,
+        priorityFn?: (a: Video, b: Video) => number
+    ): Video[] {
+        // Filtrar videos no usados
+        const unusedVideos = availableVideos.filter(v => !usedIds.has(v.id));
+        
+        if (unusedVideos.length === 0) return [];
+        
+        // Aplicar función de prioridad si se proporciona
+        let sortedVideos = unusedVideos;
+        if (priorityFn) {
+            sortedVideos = [...unusedVideos].sort(priorityFn);
+        }
+        
+        // Agrupar por categoría para asegurar diversidad
+        const videosByCategory: { [key: string]: Video[] } = {};
+        sortedVideos.forEach(video => {
+            if (!videosByCategory[video.category]) {
+                videosByCategory[video.category] = [];
+            }
+            videosByCategory[video.category].push(video);
+        });
+        
+        // Obtener categorías disponibles y mezclarlas
+        const availableCategories = shuffle(Object.keys(videosByCategory));
+        
+        const result: Video[] = [];
+        let categoryIndex = 0;
+        let roundIndex = 0;
+        
+        // Seleccionar videos alternando categorías para máxima diversidad
+        while (result.length < count && availableCategories.length > 0) {
+            const category = availableCategories[categoryIndex % availableCategories.length];
+            const categoryVideos = videosByCategory[category];
+            
+            if (categoryVideos && categoryVideos.length > roundIndex) {
+                const video = categoryVideos[roundIndex];
+                if (!usedIds.has(video.id)) {
+                    result.push(video);
+                    usedIds.add(video.id);
+                }
+            }
+            
+            categoryIndex++;
+            
+            // Si hemos pasado por todas las categorías, ir a la siguiente ronda
+            if (categoryIndex % availableCategories.length === 0) {
+                roundIndex++;
+                // Si no hay más videos en ninguna categoría, salir
+                const hasMoreVideos = availableCategories.some(cat => 
+                    videosByCategory[cat] && videosByCategory[cat].length > roundIndex
+                );
+                if (!hasMoreVideos) break;
             }
         }
+        
         return result;
     }
 
-    // Most viewed
-    const sortedByViews = [...videos].sort((a, b) => (b.views || 0) - (a.views || 0));
-    const maxPerCatMostViewed = numCategories < 9 ? 2 : 1;
-    let mostViewedVideos = selectVideosByCategory(sortedByViews, maxPerCatMostViewed, 9);
+    // Set global para rastrear videos usados entre todas las secciones
+    const globalUsedIds = new Set<string>();
 
-    // Recommended
-    const sortedByRec = [...videos]
-        .filter(v => (v.good_votes || 0) > 0 && (v.views || 0) > 0)
-        .sort((a, b) => {
-            if ((b.good_votes || 0) !== (a.good_votes || 0)) {
-                return (b.good_votes || 0) - (a.good_votes || 0);
-            }
-            return (a.views || 0) - (b.views || 0);
-        });
-    const maxPerCatRec = numCategories < 9 ? 2 : 1;
-    let recommendedVideos = selectVideosByCategory(sortedByRec, maxPerCatRec, 9);
+    // 1. HeroSlider: 5 videos más impactantes de diferentes categorías
+    const heroVideos = selectDiverseVideos(
+        videos,
+        globalUsedIds,
+        5,
+        (a, b) => {
+            const scoreA = (a.views || 0) * (a.rating || 0);
+            const scoreB = (b.views || 0) * (b.rating || 0);
+            return scoreB - scoreA;
+        }
+    );
+
+    // 2. Most Viewed: 9 videos con más vistas (diferentes al hero)
+    const mostViewedVideos = selectDiverseVideos(
+        videos,
+        globalUsedIds,
+        9,
+        (a, b) => (b.views || 0) - (a.views || 0)
+    );
+
+    // 3. Recommended: 9 videos con mejor rating (diferentes a los anteriores)  
+    const recommendedVideos = selectDiverseVideos(
+        videos,
+        globalUsedIds,
+        9,
+        (a, b) => {
+            // Priorizar videos con buen balance de rating y votos
+            const scoreA = (a.rating || 0) * Math.log((a.good_votes || 0) + 1);
+            const scoreB = (b.rating || 0) * Math.log((b.good_votes || 0) + 1);
+            return scoreB - scoreA;
+        }
+    );
+
+    // Debug simple solo cuando hay cambios
+    useEffect(() => {
+        if (videos.length < 23 && videos.length > 0) {
+            console.warn(`Solo ${videos.length} videos disponibles`);
+        }
+        if (heroVideos.length > 0) {
+            console.log(`Videos: Hero=${heroVideos.length}, MostViewed=${mostViewedVideos.length}, Recommended=${recommendedVideos.length}`);
+        }
+    }, [videos.length, heroVideos.length, mostViewedVideos.length, recommendedVideos.length]);
 
     return (
         <main className="pt-6 pb-0">
-            {featuredVideos.length > 0 && 
-                <HeroSlider 
-                    videos={featuredVideos} 
-                    onVideoSelect={onVideoSelect} 
-                    basketItems={basketItems}
-                    onToggleBasketItem={onToggleBasketItem}
-                    onCategorySelect={onCategorySelect}
-                />
-            }
-            <VideoCarousel 
-                title="Most viewed" 
-                videos={mostViewedVideos} 
-                onVideoSelect={onVideoSelect} 
-                basketItems={basketItems}
-                onToggleBasketItem={onToggleBasketItem}
-            />
-            <VideoCarousel 
-                title="Recommended" 
-                videos={recommendedVideos} 
-                onVideoSelect={onVideoSelect} 
-                basketItems={basketItems}
-                onToggleBasketItem={onToggleBasketItem}
-            />
+            {/* Botón de refrescar contenido */}
+            <div className="flex justify-between items-center mb-6 px-4 sm:px-6 lg:px-8">
+                <h1 className="text-2xl font-bold">Página principal</h1>
+                <button
+                    onClick={handleRefresh}
+                    disabled={refreshing || loading}
+                    className={`flex items-center gap-2 px-4 py-2 text-sm rounded-md border transition-all duration-300 ${
+                        refreshing || loading
+                            ? 'border-neutral-600 text-neutral-400 cursor-not-allowed' 
+                            : 'border-purple-500 text-purple-400 hover:bg-purple-500/20 hover:text-purple-300'
+                    }`}
+                    style={{
+                        boxShadow: (refreshing || loading) ? undefined : '0 0 5px rgba(147, 51, 234, 0.3)',
+                    }}
+                >
+                    <svg 
+                        className={`w-4 h-4 ${(refreshing || loading) ? 'animate-spin' : ''}`} 
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                    >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    {refreshing ? 'Refrescando...' : loading ? 'Cargando...' : 'Nuevo contenido'}
+                </button>
+            </div>
+            
+            {loading ? (
+                // Mostrar skeletons mientras carga
+                <div className="space-y-8">
+                    {/* Hero Slider Skeleton */}
+                    <div className="h-64 md:h-80 lg:h-96 bg-neutral-800 rounded-xl animate-pulse"></div>
+                    
+                    {/* Most Viewed Skeleton */}
+                    <div className="space-y-4">
+                        <div className="h-6 bg-neutral-800 rounded w-32 mx-4 sm:mx-6 lg:mx-8 animate-pulse"></div>
+                        <div className="flex gap-4 px-4 sm:px-6 lg:px-8 overflow-hidden">
+                            {Array.from({ length: 6 }).map((_, i) => (
+                                <div key={i} className="w-60 sm:w-64 md:w-72 flex-shrink-0">
+                                    <VideoCardSkeleton />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                    
+                    {/* Recommended Skeleton */}
+                    <div className="space-y-4">
+                        <div className="h-6 bg-neutral-800 rounded w-36 mx-4 sm:mx-6 lg:mx-8 animate-pulse"></div>
+                        <div className="flex gap-4 px-4 sm:px-6 lg:px-8 overflow-hidden">
+                            {Array.from({ length: 6 }).map((_, i) => (
+                                <div key={i} className="w-60 sm:w-64 md:w-72 flex-shrink-0">
+                                    <VideoCardSkeleton />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            ) : (
+                // Contenido normal una vez cargado
+                <div className={refreshing ? 'opacity-75 transition-opacity duration-300' : ''}>
+                    {heroVideos.length > 0 && 
+                        <HeroSlider 
+                            videos={heroVideos} 
+                            onVideoSelect={onVideoSelect} 
+                            basketItems={basketItems}
+                            onToggleBasketItem={onToggleBasketItem}
+                            onCategorySelect={onCategorySelect}
+                        />
+                    }
+                    <VideoCarousel 
+                        title="Most viewed" 
+                        videos={mostViewedVideos} 
+                        onVideoSelect={onVideoSelect} 
+                        basketItems={basketItems}
+                        onToggleBasketItem={onToggleBasketItem}
+                    />
+                    <VideoCarousel 
+                        title="Recommended" 
+                        videos={recommendedVideos} 
+                        onVideoSelect={onVideoSelect} 
+                        basketItems={basketItems}
+                        onToggleBasketItem={onToggleBasketItem}
+                    />
+                </div>
+            )}
         </main>
     );
 };
