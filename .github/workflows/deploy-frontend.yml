@@ -43,6 +43,16 @@ jobs:
 
               echo "[1] Actualizando frontend..."
               cd /var/app/frontend
+              
+              echo "DEBUG: Estado de git antes de actualizar:"
+              git status
+              
+              echo "DEBUG: Limpiando cambios locales para evitar conflictos..."
+              git stash push -m "Auto-stash before deploy $(date)"
+              git reset --hard HEAD
+              git clean -fd
+              
+              echo "DEBUG: Pulling desde origin main..."
               git pull origin main
 
               echo "[2] Instalando dependencias..."
