@@ -1,11 +1,17 @@
 const BlackAdPlaceholderSquare: React.FC = () => (
-  <div style={{ width: 250, height: 250, marginLeft: 32 }}>
+  <div className="hidden lg:block" style={{ width: 250, height: 250, marginLeft: 32 }}>
     <JuicyAdsHorizontal adzoneId={1104274} width={250} height={250} />
   </div>
 );
+
 const BlackAdPlaceholderLarge: React.FC = () => (
-  <div style={{ width: 908, height: 258 }}>
-    <JuicyAdsHorizontal adzoneId={1104273} width={908} height={258} />
+  <div className="w-full max-w-full overflow-hidden">
+    <div className="hidden lg:block" style={{ width: 908, height: 258 }}>
+      <JuicyAdsHorizontal adzoneId={1104273} width={908} height={258} />
+    </div>
+    <div className="block lg:hidden w-full" style={{ height: 250 }}>
+      <JuicyAdsHorizontal adzoneId={1104275} width={320} height={250} />
+    </div>
   </div>
 );
 import BlackAdPlaceholder from "./components/BlackAdPlaceholder";
@@ -637,7 +643,7 @@ const App: React.FC = () => {
           {/* No progressive loading logic here */}
           {activeView === 'videos' && (
             <>
-              <main className="w-full grid grid-cols-1 gap-4 xl:grid-cols-12">
+              <main className="w-full max-w-full grid grid-cols-1 gap-4 xl:grid-cols-12 overflow-hidden">
                 {/* Mobile sidebar overlay */}
                 {showSidebar && (
                   <div className="fixed inset-0 z-50 xl:hidden">
@@ -695,7 +701,7 @@ const App: React.FC = () => {
                   </div>
                 </aside>
 
-                <section className="xl:col-span-8 lg:col-span-9" aria-label="Results">
+                <section className="xl:col-span-8 lg:col-span-9 min-w-0 w-full" aria-label="Results">
                   <div className="mb-4 flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
                       <h2 className="text-lg font-semibold">
@@ -777,8 +783,8 @@ const App: React.FC = () => {
                           onPageChange={setCurrentPage}
                         />
                       </div>
-                      {/* White grid for ad below the video grid */}
-                      <div className="w-full rounded-xl shadow-lg h-[400px] flex items-center pl-8" style={{ background: 'transparent' }}>
+                      {/* Responsive ad container */}
+                      <div className="w-full rounded-xl shadow-lg min-h-[250px] lg:h-[400px] flex items-center justify-center lg:justify-start lg:pl-8 overflow-hidden" style={{ background: 'transparent' }}>
                         <BlackAdPlaceholderLarge />
                         <BlackAdPlaceholderSquare />
                       </div>

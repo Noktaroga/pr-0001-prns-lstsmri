@@ -13,14 +13,22 @@ const JuicyAdsOverlay: React.FC<JuicyAdsOverlayProps> = ({ adzoneId, width = 300
   useEffect(() => {
     if (!adRef.current) return;
 
+    // Calcular tamaño responsivo para overlay
+    const maxWidth = typeof window !== 'undefined' ? Math.min(window.innerWidth - 32, width) : width;
+    const responsiveWidth = Math.min(width, maxWidth);
+    const aspectRatio = height / width;
+    const responsiveHeight = Math.round(responsiveWidth * aspectRatio);
+
     // Limpiar el contenido anterior
     adRef.current.innerHTML = '';
 
     // Crear el elemento ins
     const ins = document.createElement('ins');
     ins.setAttribute('id', adzoneId.toString());
-    ins.setAttribute('data-width', width.toString());
-    ins.setAttribute('data-height', height.toString());
+    ins.setAttribute('data-width', responsiveWidth.toString());
+    ins.setAttribute('data-height', responsiveHeight.toString());
+    ins.style.maxWidth = '100%';
+    ins.style.width = '100%';
     adRef.current.appendChild(ins);
 
     // Función para cargar el anuncio
@@ -71,8 +79,12 @@ const JuicyAdsOverlay: React.FC<JuicyAdsOverlayProps> = ({ adzoneId, width = 300
   return (
     <div 
       ref={adRef} 
-      style={{ width, height }}
-      className="flex items-center justify-center bg-white rounded"
+      style={{ 
+        width: Math.min(width, typeof window !== 'undefined' ? window.innerWidth - 32 : width), 
+        height: Math.round((Math.min(width, typeof window !== 'undefined' ? window.innerWidth - 32 : width)) * (height / width)),
+        maxWidth: '100%'
+      }}
+      className="flex items-center justify-center bg-white rounded overflow-hidden"
     />
   );
 };

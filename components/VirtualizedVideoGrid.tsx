@@ -89,6 +89,7 @@ export const VirtualizedVideoGrid: React.FC<VirtualizedVideoGridProps> = ({
 			style={{
 				minHeight: `${height}px`,
 				width: '100%',
+				maxWidth: '100%',
 				overflow: 'visible',
 				position: 'relative',
 			}}
@@ -97,6 +98,7 @@ export const VirtualizedVideoGrid: React.FC<VirtualizedVideoGridProps> = ({
 				style={{
 					height: `${rowVirtualizer.getTotalSize()}px`,
 					width: '100%',
+					maxWidth: '100%',
 					position: 'relative',
 				}}
 			>
@@ -126,11 +128,13 @@ export const VirtualizedVideoGrid: React.FC<VirtualizedVideoGridProps> = ({
 								top: 0,
 								left: 0,
 								width: '100%',
+								maxWidth: '100%',
 								height: `${virtualRow.size}px`,
 								transform: `translateY(${virtualRow.start}px)`,
 								display: 'flex',
 								gap: '0.75rem', // Menos gap en mobile
 								padding: '0 0.75rem', // Menos padding en mobile
+								boxSizing: 'border-box',
 							}}
 						>
 							{items}

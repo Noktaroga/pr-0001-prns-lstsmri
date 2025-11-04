@@ -35,9 +35,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const categoriesWithVideos = categories.filter((c) => c.value !== 'all');
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 w-full max-w-full overflow-hidden">
       {/* --- Categories Section --- */}
-      <div className="rounded-xl border border-neutral-800 bg-neutral-900 p-4">
+      <div className="rounded-xl border border-neutral-800 bg-neutral-900 p-4 w-full">
         <h3 className="mb-2 text-sm font-semibold">Categories</h3>
         <ul className="space-y-1 text-sm" aria-label="Category list">
           {categoriesWithVideos.map((c) => (
@@ -46,8 +46,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onClick={() => onCategorySelect(c.value)}
                 className="inline-flex w-full items-center justify-between rounded-md px-2 py-1.5 hover:bg-neutral-800 text-left"
               >
-                <span>{c.label}</span>
-                <span className="text-xs opacity-60">→</span>
+                <span className="truncate">{c.label}</span>
+                <span className="text-xs opacity-60 flex-shrink-0 ml-2">→</span>
               </button>
             </li>
           ))}
@@ -55,7 +55,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* --- Duration Section --- */}
-      <div className="rounded-xl border border-neutral-800 bg-neutral-900 p-4">
+      <div className="rounded-xl border border-neutral-800 bg-neutral-900 p-4 w-full">
         <h3 className="mb-2 text-sm font-semibold">Duration</h3>
         <div className="space-y-2">
           {durationFilters.map((filter) => (
@@ -74,12 +74,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
 
-      {/* --- JuicyAds 300x250 Ad --- */}
-      <div className="flex justify-center mt-4">
-        {/* JuicyAds v3.0 */}
-        <div style={{ width: 300, height: 250 }}>
+      {/* --- JuicyAds Responsive Ad --- */}
+      <div className="flex justify-center mt-4 w-full overflow-hidden">
+        {/* JuicyAds v3.0 - Responsive */}
+        <div 
+          className="w-full max-w-[300px]" 
+          style={{ 
+            maxWidth: '100%',
+            aspectRatio: '300/250',
+            minHeight: '200px'
+          }}
+        >
           <script type="text/javascript" data-cfasync="false" async src="https://poweredby.jads.co/js/jads.js"></script>
-          <ins id="1104271" data-width="300" data-height="250"></ins>
+          <ins id="1104271" data-width="300" data-height="250" style={{ maxWidth: '100%', height: 'auto' }}></ins>
           <script type="text/javascript" data-cfasync="false" async>{`(adsbyjuicy = window.adsbyjuicy || []).push({'adzone':1104271});`}</script>
         </div>
         {/* JuicyAds END */}
