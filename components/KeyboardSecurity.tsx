@@ -5,10 +5,10 @@ const KeyboardSecurity: React.FC = () => {
     // Lista de combinaciones de teclas a bloquear
     const blockedKeyCombinations = [
       // Developer Tools
-      { key: 'F12' },
+      //{ key: 'F12' },
       { key: 'I', ctrl: true, shift: true }, // Ctrl+Shift+I
       { key: 'J', ctrl: true, shift: true }, // Ctrl+Shift+J
-      { key: 'C', ctrl: true, shift: true }, // Ctrl+Shift+C
+      //{ key: 'C', ctrl: true, shift: true }, // Ctrl+Shift+C
       { key: 'K', ctrl: true, shift: true }, // Ctrl+Shift+K
       { key: 'U', ctrl: true }, // Ctrl+U (View Source)
       
@@ -22,8 +22,8 @@ const KeyboardSecurity: React.FC = () => {
       
       // Navigation and Refresh
       { key: 'F5' }, // F5 (Refresh)
-      { key: 'R', ctrl: true }, // Ctrl+R (Refresh)
-      { key: 'R', ctrl: true, shift: true }, // Ctrl+Shift+R (Hard Refresh)
+      //{ key: 'R', ctrl: true }, // Ctrl+R (Refresh)
+      //{ key: 'R', ctrl: true, shift: true }, // Ctrl+Shift+R (Hard Refresh)
       { key: 'F', ctrl: true }, // Ctrl+F (Find)
       { key: 'G', ctrl: true }, // Ctrl+G (Find Next)
       { key: 'H', ctrl: true }, // Ctrl+H (History)
