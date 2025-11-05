@@ -118,7 +118,6 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { Video } from '../types';
 import { AdSlot } from './AdSlot';
-import JuicyAdsHorizontal from './JuicyAdsHorizontal';
 import { VideoCarousel } from './VideoCarousel';
 import { trackAdClick } from '../utils/analytics';
 
@@ -921,209 +920,6 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
                       <source src={videoLinks[1]} type="video/mp4" />
                       Your browser does not support the video tag.
                     </video>
-                    {adOverlayStep > 0 && !adHidden && (
-                      <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/90">
-                        {/* JuicyAdsHorizontal - Primer anuncio con dimensiones exactas */}
-                        <div
-                          ref={adContainerRef}
-                          className="mb-4 flex items-center justify-center relative rounded-lg p-2 transition-all duration-200"
-                          style={{ width: 328, height: 306 }}
-                          title={adBannerClicked ? "¡Banner clickeado! Se cerrará automáticamente en 5 segundos..." : "Haz click en el anuncio para continuar"}
-                        >
-                          {/* Anuncio real en la capa más baja */}
-                          <div 
-                            className="relative z-10"
-                            style={{ 
-                              opacity: adBannerClicked ? 1 : 0.85 // Semi-transparente
-                            }}
-                          >
-                            <JuicyAdsHorizontal adzoneId={1104275} width={308} height={286} />
-                          </div>
-
-                          {/* X FALSA #1 - Esquina superior izquierda */}
-                          <button
-                            className="absolute top-2 left-2 z-50 w-10 h-10 bg-red-600 hover:bg-red-700 text-white rounded-full flex items-center justify-center shadow-xl transition-all duration-200 hover:scale-110 cursor-pointer"
-                            onClick={handleAdBannerClick}
-                            title="Cerrar anuncio"
-                            style={{
-                              fontSize: '16px',
-                              fontWeight: 'bold',
-                              textShadow: '1px 1px 2px rgba(0,0,0,0.5)',
-                              opacity: '0.3'
-                            }}
-                          >
-                            ✕
-                          </button>
-                          
-                          {/* X FALSA #2 - Esquina superior derecha */}
-                          <button
-                            className="absolute top-2 right-2 z-50 w-10 h-10 bg-red-600 hover:bg-red-700 text-white rounded-full flex items-center justify-center shadow-xl transition-all duration-200 hover:scale-110 cursor-pointer"
-                            onClick={handleAdBannerClick}
-                            title="Cerrar anuncio"
-                            style={{
-                              fontSize: '16px',
-                              fontWeight: 'bold',
-                              textShadow: '1px 1px 2px rgba(0,0,0,0.5)',
-                              opacity: '0.8'
-                            }}
-                          >
-                            
-                          </button>
-                          
-                          {/* X FALSA #3 - Centro del anuncio */}
-                          <button
-                            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 w-14 h-14 bg-red-600 hover:bg-red-700 text-white rounded-full flex items-center justify-center shadow-xl transition-all duration-200 hover:scale-110 cursor-pointer"
-                            onClick={handleAdBannerClick}
-                            title="¡CERRAR AHORA!"
-                            style={{
-                              fontSize: '20px',
-                              fontWeight: 'bold',
-                              textShadow: '1px 1px 2px rgba(0,0,0,0.5)',
-                              opacity: '0.3'
-                            }}
-                          >
-                            ✕
-                          </button>
-                          
-                          {/* Botón X en la esquina superior derecha */}
-                          {showCloseButton && (
-                            <button
-                              className="absolute -top-2 -right-2 z-50 w-8 h-8 bg-red-600 hover:bg-red-700 text-white rounded-full flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-110"
-                              onClick={handleCloseAd}
-                              title="Cerrar anuncio"
-                              style={{ opacity: '0.3' }}
-                            >
-                              <CloseIcon />
-                            </button>
-                          )}
-                        </div>
-                        <div className="text-sm text-white mt-4 bg-black/50 px-4 py-2 rounded">
-                          {adBannerClicked 
-                            ? "✅ ¡Anuncio abierto! Se cerrará automáticamente en 5 segundos..."
-                            : "❌ Haz click en las tres X para cerrar el anuncio"
-                          }
-                        </div>
-                      </div>
-                    )}
-                    
-                    {adOverlayStep > 0 && !adHidden && (
-                      <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/90">
-
-                        <div
-                          className="mb-4 flex items-center justify-center relative rounded-lg p-2 transition-all duration-200"
-                          style={{ width: 328, height: 306 }}
-                        >
-                          {/* X trasera - z-index dinámico según funcionalidad */}
-                          {!adBannerClicked && (
-                            <div 
-                              className="absolute inset-0 pointer-events-none"
-                              style={{ zIndex: activeCloseButton === 1 ? 25 : 5 }}
-                            >
-                              <button
-                                className="absolute w-16 h-16 bg-red-600 text-white rounded-full flex items-center justify-center shadow-xl cursor-pointer pointer-events-auto transform -translate-x-1/2 -translate-y-1/2"
-                                onClick={() => handleXClick(1)}
-                                style={{
-                                  fontSize: '24px',
-                                  fontWeight: 'bold',
-                                  textShadow: '1px 1px 2px rgba(0,0,0,0.5)',
-                                  opacity: activeCloseButton === 1 ? 0.3 : 0.3, // X verdadera con opacidad reducida
-                                  top: xPositionBack.top,
-                                  left: xPositionBack.left
-                                }}
-                              >
-                                ✕
-                              </button>
-                            </div>
-                          )}
-
-                          {/* Anuncio real POR DETRÁS - 50% transparente y CLICKEABLE */}
-                                                    <div 
-                            className="relative cursor-pointer"
-                            style={{ 
-                              opacity: adBannerClicked ? 1 : 0.6, // 60% transparente hasta que se haga click
-                              zIndex: 15 // Asegurar que esté por encima de las X falsas pero debajo de la X verdadera
-                            }}
-                            onClick={handleAdBannerClick}
-                          >
-                            <JuicyAdsHorizontal adzoneId={1104275} width={308} height={286} />
-                          </div>
-                          
-                          {/* X frontal - z-index dinámico según funcionalidad */}
-                          {!adBannerClicked && (
-                            <div 
-                              className="absolute inset-0 pointer-events-none"
-                              style={{ zIndex: activeCloseButton === 2 ? 25 : 5 }}
-                            >
-                              <button
-                                className="absolute w-16 h-16 bg-red-600 text-white rounded-full flex items-center justify-center shadow-xl cursor-pointer pointer-events-auto transform -translate-x-1/2 -translate-y-1/2"
-                                onClick={() => handleXClick(2)}
-                                style={{
-                                  fontSize: '24px',
-                                  fontWeight: 'bold',
-                                  textShadow: '1px 1px 2px rgba(0,0,0,0.5)',
-                                  opacity: activeCloseButton === 2 ? 0.3 : 0.3, // X verdadera con opacidad reducida
-                                  top: xPosition.top,
-                                  left: xPosition.left
-                                }}
-                              >
-                                ✕
-                              </button>
-                            </div>
-                          )}
-                          
-                          {/* X tercera - z-index dinámico según funcionalidad */}
-                          {!adBannerClicked && (
-                            <div 
-                              className="absolute inset-0 pointer-events-none"
-                              style={{ zIndex: activeCloseButton === 3 ? 25 : 5 }}
-                            >
-                              <button
-                                className="absolute w-16 h-16 bg-red-600 text-white rounded-full flex items-center justify-center shadow-xl cursor-pointer pointer-events-auto transform -translate-x-1/2 -translate-y-1/2"
-                                onClick={() => handleXClick(3)}
-                                style={{
-                                  fontSize: '24px',
-                                  fontWeight: 'bold',
-                                  textShadow: '1px 1px 2px rgba(0,0,0,0.5)',
-                                  opacity: activeCloseButton === 3 ? 0.3 : 0.3, // X verdadera con opacidad reducida
-                                  top: xPositionClose.top,
-                                  left: xPositionClose.left
-                                }}
-                              >
-                                ✕
-                              </button>
-                            </div>
-                          )}
-                          {/* X cuarta - z-index dinámico según funcionalidad */}
-                          {!adBannerClicked && (
-                            <div
-                              className="absolute inset-0 pointer-events-none"
-                              style={{ zIndex: activeCloseButton === 4 ? 25 : 5 }}
-                            >
-                              <button
-                                className="absolute w-16 h-16 bg-red-600 text-white rounded-full flex items-center justify-center shadow-xl cursor-pointer pointer-events-auto transform -translate-x-1/2 -translate-y-1/2"
-                                onClick={() => handleXClick(4)}
-                                style={{
-                                  fontSize: '24px',
-                                  fontWeight: 'bold',
-                                  textShadow: '1px 1px 2px rgba(0,0,0,0.5)',
-                                  opacity: activeCloseButton === 4 ? 0.3 : 0.3, // X verdadera con opacidad reducida
-                                  top: xPositionClose.top,
-                                  left: xPositionClose.left
-                                }}
-                              >
-                                ✕
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                        <div className="text-sm text-white mt-4 bg-black/50 px-4 py-2 rounded">
-                          {adBannerClicked 
-                            ? "✅ ¡Anuncio abierto! Se cerrará automáticamente en 5 segundos..."
-                            : "❌ Haz click en las tres X para cerrar el anuncio"
-                          }
-                        </div>
-                      </div>
-                    )}
                   </div>
                 ) : (
                   <div className="flex items-center justify-center h-full">No se encontraron enlaces de video.</div>
@@ -1175,10 +971,7 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
                   <span>{isVideoInBasket ? 'In Basket' : 'Add to Basket'}</span>
                 </button>
              </div>
-                         {/* JuicyAds 300x250 ad below Like/Add to Basket */}
-                         <div className="mt-4 flex justify-center">
-                           <JuicyAdsHorizontal adzoneId={1104271} width={300} height={250} />
-                         </div>
+                         {/* Ad space below Like/Add to Basket - removed */}
 
          {/* Vertical ad removed as requested */}
         </div>
@@ -1187,9 +980,9 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
 
       
 
-    {/* Horizontal ad above related videos */}
+    {/* Horizontal ad above related videos - removed */}
     <div className="mt-8 px-4 sm:px-0">
-      <JuicyAdsHorizontal adzoneId={1104273} width={728} height={90} />
+      {/* Ad space removed */}
     </div>
 
     {validRelated.length > 0 && (
@@ -1205,7 +998,7 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
     )}
 
       <div className="px-4 sm:px-0">
-        <JuicyAdsHorizontal adzoneId={1104273} width={728} height={90} />
+        {/* Ad space removed */}
       </div>
     </main>
   );
