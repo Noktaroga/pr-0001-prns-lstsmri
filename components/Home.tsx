@@ -17,7 +17,7 @@ interface HomeProps {
 
 export const Home: React.FC<HomeProps> = ({ videos: fallbackVideos, onVideoSelect, basketItems, onToggleBasketItem, onCategorySelect }) => {
     const [diverseVideos, setDiverseVideos] = useState<Video[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
     const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
     const [isLoadingInProgress, setIsLoadingInProgress] = useState(false); // Evitar llamadas múltiples
@@ -38,7 +38,7 @@ export const Home: React.FC<HomeProps> = ({ videos: fallbackVideos, onVideoSelec
                 if (hasLoadedOnce) {
                     return; // Evitar cargas múltiples
                 }
-                setLoading(true);
+                setLoading(false);
             }
             
             const { videos: newVideos } = await fetchDiverseVideosForHome();
@@ -150,41 +150,64 @@ export const Home: React.FC<HomeProps> = ({ videos: fallbackVideos, onVideoSelec
         return result;
     }
 
-    // Set global para rastrear videos usados entre todas las secciones
-    const globalUsedIds = new Set<string>();
+            // --- Nueva lógica para selección de videos evitando repeticiones ---
+            // 1. Hero Slider (máximo 5 videos, en grande)
+            const videosByCategory = videos.reduce((acc, v) => {
+                acc[v.category] = acc[v.category] ? [...acc[v.category], v] : [v];
+                return acc;
+            }, {} as Record<string, Video[]>);
 
-    // 1. HeroSlider: 5 videos más impactantes de diferentes categorías
-    const heroVideos = selectDiverseVideos(
-        videos,
-        globalUsedIds,
-        5,
-        (a, b) => {
-            const scoreA = (a.views || 0) * (a.rating || 0);
-            const scoreB = (b.views || 0) * (b.rating || 0);
-            return scoreB - scoreA;
-        }
-    );
+            const topCategories = Object.entries(videosByCategory)
+                .sort((a: [string, Video[]], b: [string, Video[]]) => b[1].length - a[1].length)
+                .slice(0, 5)
+                .map(([cat]) => cat);
 
-    // 2. Most Viewed: 9 videos con más vistas (diferentes al hero)
-    const mostViewedVideos = selectDiverseVideos(
-        videos,
-        globalUsedIds,
-        9,
-        (a, b) => (b.views || 0) - (a.views || 0)
-    );
+            const heroVideos: Video[] = [];
+            const usedHeroIds = new Set<string>();
+            for (const cat of topCategories) {
+                const best = videosByCategory[cat]
+                    .filter(v => !usedHeroIds.has(v.id))
+                    .sort((a, b) =>
+                        (b.rating_percentage ?? 0) - (a.rating_percentage ?? 0) ||
+                        (b.good_votes ?? 0) - (a.good_votes ?? 0)
+                    )[0];
+                if (best) {
+                    heroVideos.push(best);
+                    usedHeroIds.add(best.id);
+                }
+                if (heroVideos.length >= 5) break;
+            }
 
-    // 3. Recommended: 9 videos con mejor rating (diferentes a los anteriores)  
-    const recommendedVideos = selectDiverseVideos(
-        videos,
-        globalUsedIds,
-        9,
-        (a, b) => {
-            // Priorizar videos con buen balance de rating y votos
-            const scoreA = (a.rating || 0) * Math.log((a.good_votes || 0) + 1);
-            const scoreB = (b.rating || 0) * Math.log((b.good_votes || 0) + 1);
-            return scoreB - scoreA;
-        }
-    );
+            // 2. Carousel "Most Viewed" (máximo 9 videos, sin repetir con Hero)
+            const mostViewedVideos = [...videos]
+                .filter(v => !usedHeroIds.has(v.id))
+                .sort((a, b) => (b.total_votes ?? 0) - (a.total_votes ?? 0))
+                .slice(0, 9);
+            const usedMostViewedIds = new Set<string>(mostViewedVideos.map(v => v.id));
+
+            // 3. Carousel "Recommended" (máximo 9 videos, sin repetir con Hero ni MostViewed)
+            const getMinutes = (duration: string) => {
+                const [min, sec] = duration.split(':').map(Number);
+                return min + sec / 60;
+            };
+
+            const recommendedCandidates = videos.filter(v => {
+                const mins = getMinutes(v.duration);
+                return mins >= 5 && mins <= 15 && !usedHeroIds.has(v.id) && !usedMostViewedIds.has(v.id);
+            }).sort((a, b) => (b.rating_percentage ?? 0) - (a.rating_percentage ?? 0));
+
+            const recommendedVideos: Video[] = [];
+            const usedCategories = new Set<string>();
+            for (const v of recommendedCandidates) {
+                if (recommendedVideos.length >= 9) break;
+                if (!usedCategories.has(v.category)) {
+                    recommendedVideos.push(v);
+                    usedCategories.add(v.category);
+                }
+            }
+            if (recommendedVideos.length < 9) {
+                recommendedVideos.push(...recommendedCandidates.slice(recommendedVideos.length, 9));
+            }
 
     // Debug simple solo cuando hay cambios
     useEffect(() => {
