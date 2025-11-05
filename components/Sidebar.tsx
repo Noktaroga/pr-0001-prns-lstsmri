@@ -35,16 +35,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const categoriesWithVideos = categories.filter((c) => c.value !== 'all');
 
   return (
-    <div className="flex flex-col gap-4 w-full max-w-full overflow-hidden">
+    <div className="flex flex-col gap-4 w-full max-w-full">
       {/* --- Categories Section --- */}
       <div className="rounded-xl border border-neutral-800 bg-neutral-900 p-4 w-full">
         <h3 className="mb-2 text-sm font-semibold">Categories</h3>
-        <ul className="space-y-1 text-sm" aria-label="Category list">
+        <ul
+          className="space-y-1 text-sm max-h-[40vh] overflow-y-auto pr-1"
+          aria-label="Category list"
+        >
           {categoriesWithVideos.map((c) => (
             <li key={c.value}>
               <button
                 onClick={() => onCategorySelect(c.value)}
-                className="inline-flex w-full items-center justify-between rounded-md px-2 py-1.5 hover:bg-neutral-800 text-left"
+                className="inline-flex w-full items-center justify-between rounded-md px-2 py-2 text-base hover:bg-neutral-800 text-left"
               >
                 <span className="truncate">{c.label}</span>
                 <span className="text-xs opacity-60 flex-shrink-0 ml-2">→</span>

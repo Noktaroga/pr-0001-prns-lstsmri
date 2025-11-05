@@ -703,8 +703,8 @@ const App: React.FC = () => {
 
   return (
   <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col" style={{ fontFamily: 'Inter, Segoe UI, Arial, sans-serif' }}>
-      {/* Componente de seguridad del teclado */}
-      <KeyboardSecurity />
+    {/* Componente de seguridad del teclado deshabilitado */}
+    {/* <KeyboardSecurity /> */}
       
       <Header
         onToggleSidebar={() => setShowSidebar((s) => !s)}
@@ -956,11 +956,22 @@ const App: React.FC = () => {
               </main>
               <button
                 onClick={() => setShowSidebar((s) => !s)}
-                className="fixed bottom-6 right-6 inline-flex items-center gap-2 rounded-full border border-neutral-700 bg-neutral-900 px-4 py-2 text-sm shadow-lg hover:bg-neutral-800 xl:hidden"
+                className="fixed bottom-8 right-8 inline-flex items-center gap-3 rounded-full border-2 border-pink-500 bg-black px-6 py-4 text-lg shadow-2xl xl:hidden neon-filters-btn"
                 aria-label="Toggle filters"
+                style={{
+                  boxShadow: '0 0 24px #ff2d55, 0 0 48px #a259ff',
+                  textShadow: '0 0 8px #ff2d55, 0 0 16px #a259ff',
+                  color: '#ff2d55',
+                  fontWeight: 'bold',
+                  letterSpacing: '0.05em',
+                }}
               >
-                <FilterIcon />
-                Filters
+                <span style={{ filter: 'drop-shadow(0 0 6px #ff2d55)' }}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ff2d55" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+                  </svg>
+                </span>
+                <span style={{ color: '#ff2d55', textShadow: '0 0 8px #ff2d55, 0 0 16px #a259ff' }}>Filters</span>
               </button>
             </>
           )}
