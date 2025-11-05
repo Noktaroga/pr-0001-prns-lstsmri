@@ -212,6 +212,22 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
   const { id, title, category, rating, total_votes, good_votes, bad_votes, duration } = video;
   const sources = Array.isArray(video.sources) && video.sources.length > 0 ? video.sources : [{ quality: 'default', url: '' }];
   
+  useEffect(() => {
+    const scriptId = 'adManager-script';
+    if (!document.getElementById(scriptId)) {
+      const script = document.createElement('script');
+      script.id = scriptId;
+      script.async = true;
+      script.src = 'https://js.wpadmngr.com/static/adManager.js';
+      script.setAttribute('data-admpid', '388725');
+      document.body.appendChild(script);
+    }
+    return () => {
+      const script = document.getElementById(scriptId);
+      if (script) document.body.removeChild(script);
+    };
+  }, []);
+  
   // Schema.org VideoObject y metadatos SEO - Agregar al head del documento
   useEffect(() => {
     // 1. Generar y agregar Schema.org JSON-LD
@@ -900,6 +916,7 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
                 ) : videoLinks.length > 0 ? (
                   <div className="relative w-full h-full">
                     <video
+                      id="main-video"
                       ref={videoRef}
                       key={videoLinks[videoLinks.length - 1] || 'no-link'}
                       controls
