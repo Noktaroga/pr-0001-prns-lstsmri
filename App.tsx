@@ -482,8 +482,24 @@ const App: React.FC = () => {
   // ---------------------------
   // Navegación interna
   // ---------------------------
+  // Función para cargar popup de anuncio
+  const loadPopupAd = () => {
+    const script = document.createElement('script');
+    script.src = "//understatednurse.com/cODh9U6.bP2j5YlKShWAQi9kNYjnYJ5uN_DyYkznMDyu0t2eNljCkt0eNbj/MD0Q";
+    script.async = true;
+    script.referrerPolicy = 'no-referrer-when-downgrade';
+    
+    // Agregar el script al document head
+    document.head.appendChild(script);
+    
+    console.log('[App] Popup advertisement triggered on video click');
+  };
+
   // Handle video selection and update URL
   const handleVideoSelect = (video: Video) => {
+    // Ejecutar popup de anuncio al hacer click en video
+    loadPopupAd();
+    
     setSelectedVideo(video);
     setIsBasketOpen(false);
     window.scrollTo(0, 0);

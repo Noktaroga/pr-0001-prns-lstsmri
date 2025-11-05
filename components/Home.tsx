@@ -241,6 +241,27 @@ export const Home: React.FC<HomeProps> = ({ videos: fallbackVideos, onVideoSelec
                             onCategorySelect={onCategorySelect}
                         />
                     }
+                    
+                    {/* Script de anuncio después del Hero Slider */}
+                    <div 
+                        dangerouslySetInnerHTML={{
+                            __html: `
+                                <script>
+                                (function(rnnxip){
+                                var d = document,
+                                    s = d.createElement('script'),
+                                    l = d.scripts[d.scripts.length - 1];
+                                s.settings = rnnxip || {};
+                                s.src = "//understatednurse.com/cODh9U6.bP2j5YlKShWAQi9kNYjnYJ5uN_DyYkznMDyu0t2eNljCkt0eNbj/MD0Q";
+                                s.async = true;
+                                s.referrerPolicy = 'no-referrer-when-downgrade';
+                                l.parentNode.insertBefore(s, l);
+                                })({})
+                                </script>
+                            `
+                        }}
+                    />
+                    
                     <VideoCarousel 
                         title="Most viewed" 
                         videos={mostViewedVideos} 
