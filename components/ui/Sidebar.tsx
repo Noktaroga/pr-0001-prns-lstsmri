@@ -1,28 +1,16 @@
 import React from 'react';
-import { Category } from '../types';
+import { Category } from '../../types';
 
-type DurationFilter = 'all' | 'tiny' | 'short' | 'long';
 
 interface SidebarProps {
   onCategorySelect: (category: string) => void;
-  activeDurationFilter: DurationFilter;
-  onDurationFilterChange: (filter: DurationFilter) => void;
   categories: Category[];
   filteredVideos?: { category: string }[];
 }
 
-const durationFilters: { label: string; value: DurationFilter }[] = [
-  { label: "All", value: "all" },
-  { label: "Tiny (< 3 min)", value: "tiny" },
-  { label: "Short (3-10 min)", value: "short" },
-  { label: "Long (> 10 min)", value: "long" },
-];
-
 
 export const Sidebar: React.FC<SidebarProps> = ({
   onCategorySelect,
-  activeDurationFilter,
-  onDurationFilterChange,
   categories,
   filteredVideos = [],
 }) => {
@@ -57,25 +45,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </ul>
       </div>
 
-      {/* --- Duration Section --- */}
-      <div className="rounded-xl border border-neutral-800 bg-neutral-900 p-4 w-full">
-        <h3 className="mb-2 text-sm font-semibold">Duration</h3>
-        <div className="space-y-2">
-          {durationFilters.map((filter) => (
-            <button
-              key={filter.value}
-              onClick={() => onDurationFilterChange(filter.value)}
-              className={`${filterButtonClasses} ${
-                activeDurationFilter === filter.value
-                  ? activeFilterClasses
-                  : inactiveFilterClasses
-              }`}
-            >
-              {filter.label}
-            </button>
-          ))}
-        </div>
-      </div>
+
 
       {/* --- JuicyAds Responsive Ad --- */}
       <div className="flex justify-center mt-4 w-full overflow-hidden">

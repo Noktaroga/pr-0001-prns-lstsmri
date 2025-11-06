@@ -1,4 +1,5 @@
 import React from 'react';
+import { PopupNews } from './popup-news';
 import { trackSearch } from '../../utils/analytics';
 
 interface HeaderProps {
@@ -48,6 +49,7 @@ const BasketIcon = () => (
 export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, query, setQuery, activeView, onViewChange, basketItemCount, onToggleBasket, onSearch, t }) => {
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+  const [showLogoPopup, setShowLogoPopup] = React.useState(false);
   const searchInputRef = React.useRef<HTMLInputElement>(null);
 
   // El input usa el estado global query directamente
@@ -124,9 +126,15 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, query, setQuery
             </button>
           )}
 
-          <a href="#" className="inline-flex items-center">
+          <button
+            type="button"
+            className="inline-flex items-center focus:outline-none"
+            onClick={() => setShowLogoPopup(true)}
+            style={{ background: 'none', border: 'none', padding: 0, margin: 0 }}
+          >
             <img src="/logo.png" alt="Logo" className="h-14 w-15 object-contain" />
-          </a>
+          </button>
+        <PopupNews open={showLogoPopup} onClose={() => setShowLogoPopup(false)} />
 
           {/* Mobile search */}
           <div className="relative flex items-center sm:hidden flex-1 max-w-[200px]">

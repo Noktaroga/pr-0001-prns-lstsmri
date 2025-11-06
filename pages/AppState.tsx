@@ -22,7 +22,6 @@ export function useAppState() {
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [activeCat, setActiveCat] = useState(CATEGORY_LIST[0]);
-  const [durationFilter, setDurationFilter] = useState<'all' | 'tiny' | 'short' | 'long'>('all');
   const [showSidebar, setShowSidebar] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
   const [loadingVideoFromUrl, setLoadingVideoFromUrl] = useState(() => {
@@ -167,22 +166,12 @@ export function useAppState() {
     if (activeCat && activeCat !== 'all') {
       result = result.filter(v => v.category === activeCat);
     }
-    // Duration filter
-    if (durationFilter !== 'all') {
-      result = result.filter(v => {
-        const mins = getMinutes(v.duration);
-        if (durationFilter === 'tiny') return mins < 2.5;
-        if (durationFilter === 'short') return mins >= 2.5 && mins < 7;
-        if (durationFilter === 'long') return mins >= 7;
-        return true;
-      });
-    }
     // Smart search filter
     if (activeSearchQuery.trim()) {
       result = smartVideoSearch(result, activeSearchQuery);
     }
     return result;
-  }, [videos, activeSearchQuery, activeCat, durationFilter]);
+  }, [videos, activeSearchQuery, activeCat]);
 
   // Restore backend pagination logic: use videosPage when no search, filteredVideos only for search
   const shouldUseLocalFiltering = activeView === 'videos' && activeSearchQuery.trim();
@@ -244,8 +233,7 @@ export function useAppState() {
     setLoadError,
     activeCat,
     setActiveCat,
-    durationFilter,
-    setDurationFilter,
+  // ...existing code...
     showSidebar,
     setShowSidebar,
     selectedVideo,

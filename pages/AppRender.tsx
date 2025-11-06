@@ -187,12 +187,6 @@ export function AppMainRender(props: any) {
                               setCurrentPage(1);
                               setShowSidebar(false);
                             }}
-                            activeDurationFilter={durationFilter}
-                            onDurationFilterChange={(filter) => {
-                              setDurationFilter(filter);
-                              setCurrentPage(1);
-                              setShowSidebar(false);
-                            }}
                             categories={categories}
                             filteredVideos={finalDisplayVideos}
                           />
@@ -206,11 +200,6 @@ export function AppMainRender(props: any) {
                       <Sidebar 
                         onCategorySelect={(category) => {
                           rest.handleCategorySelect(category);
-                          setCurrentPage(1);
-                        }}
-                        activeDurationFilter={durationFilter}
-                        onDurationFilterChange={(filter) => {
-                          setDurationFilter(filter);
                           setCurrentPage(1);
                         }}
                         categories={categories}
