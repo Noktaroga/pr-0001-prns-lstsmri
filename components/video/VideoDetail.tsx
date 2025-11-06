@@ -115,6 +115,7 @@ function generateSeoMetadata(video: Video) {
     };
 }
 import React, { useState, useRef, useEffect, useMemo } from 'react';
+import VideoAdManager from './VideoAdManager';
 import Hls from 'hls.js';
 import { createPortal } from 'react-dom';
 import { Video } from '../../types';
@@ -982,6 +983,7 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
                       )}
                       Your browser does not support the video tag.
                     </video>
+                    <VideoAdManager />
                   </div>
                 ) : (
                   <div className="flex items-center justify-center h-full">No se encontraron enlaces de video.</div>
