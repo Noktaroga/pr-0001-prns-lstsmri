@@ -1,8 +1,22 @@
 // Helper functions for search, filtering, and relevance
 
 export function getMinutes(duration: string): number {
-  const [min, sec] = duration.split(':').map(Number);
-  return min + sec / 60;
+  if (!duration) return 0;
+  // Handle 'mm:ss' format
+  if (duration.includes(':')) {
+    const [min, sec] = duration.split(':').map(Number);
+    return min + (sec || 0) / 60;
+  }
+  // Handle 'X min' or 'Y sec' format
+  const minMatch = duration.match(/(\d+)\s*min/);
+  if (minMatch) {
+    return parseInt(minMatch[1], 10);
+  }
+  const secMatch = duration.match(/(\d+)\s*sec/);
+  if (secMatch) {
+    return parseInt(secMatch[1], 10) / 60;
+  }
+  return 0;
 }
 
 export function calculateSearchRelevance(title: string, searchTerm: string): number {

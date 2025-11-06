@@ -184,11 +184,13 @@ export function AppMainRender(props: any) {
                           <Sidebar 
                             onCategorySelect={(category) => {
                               rest.handleCategorySelect(category);
+                              setCurrentPage(1);
                               setShowSidebar(false);
                             }}
                             activeDurationFilter={durationFilter}
                             onDurationFilterChange={(filter) => {
                               setDurationFilter(filter);
+                              setCurrentPage(1);
                               setShowSidebar(false);
                             }}
                             categories={categories}
@@ -202,9 +204,15 @@ export function AppMainRender(props: any) {
                   <aside className="hidden xl:block xl:col-span-2 ml-2 md:ml-4 xl:ml-6" aria-label="Sidebar navigation">
                     <div className="lg:sticky lg:top-28">
                       <Sidebar 
-                        onCategorySelect={rest.handleCategorySelect} 
+                        onCategorySelect={(category) => {
+                          rest.handleCategorySelect(category);
+                          setCurrentPage(1);
+                        }}
                         activeDurationFilter={durationFilter}
-                        onDurationFilterChange={setDurationFilter}
+                        onDurationFilterChange={(filter) => {
+                          setDurationFilter(filter);
+                          setCurrentPage(1);
+                        }}
                         categories={categories}
                         filteredVideos={finalDisplayVideos}
                       />
@@ -223,7 +231,7 @@ export function AppMainRender(props: any) {
                         )}
                       </div>
                     </div>
-                    {activeView === 'videos' && totalPages > 1 && finalDisplayVideos.length > 0 && (
+                    {activeView === 'videos' && totalPages > 1 && (
                       <div className="mb-4">
                         <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
                       </div>
@@ -246,7 +254,7 @@ export function AppMainRender(props: any) {
                         />
                       </div>
                     )}
-                    {activeView === 'videos' && totalPages > 1 && finalDisplayVideos.length > 0 && (
+                    {activeView === 'videos' && totalPages > 1 && (
                       <>
                         <div className="mt-1">
                           <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
