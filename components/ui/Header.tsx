@@ -46,26 +46,24 @@ const BasketIcon = () => (
 
 
 export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, query, setQuery, activeView, onViewChange, basketItemCount, onToggleBasket, onSearch, t }) => {
+
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
-  const [searchInput, setSearchInput] = React.useState(''); // Estado local para el input
   const searchInputRef = React.useRef<HTMLInputElement>(null);
 
-  // Manejar el cambio en el input (sin filtrar en tiempo real)
+  // El input usa el estado global query directamente
   const handleInputChange = (value: string) => {
-    setSearchInput(value);
+    setQuery(value);
   };
 
-  // Manejar la búsqueda (cuando se hace clic en el botón o se presiona Enter)
+  // Disparar búsqueda usando el valor global
   const handleSearch = () => {
-    const trimmedSearch = searchInput.trim();
-    setQuery(trimmedSearch); // Actualizar el query en el estado global
-    onSearch(trimmedSearch); // Ejecutar la búsqueda
-    if (trimmedSearch.length > 2) { // Solo trackear búsquedas con más de 2 caracteres
+    const trimmedSearch = query.trim();
+    onSearch(trimmedSearch);
+    if (trimmedSearch.length > 2) {
       trackSearch(trimmedSearch);
     }
   };
 
-  // Manejar Enter en el input
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       handleSearch();
@@ -85,10 +83,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, query, setQuery
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Sincronizar searchInput con query cuando cambie externamente
-  React.useEffect(() => {
-    setSearchInput(query);
-  }, [query]);
+  // Ya no es necesario sincronizar searchInput con query
 
   const navButtonClasses = "rounded-md px-3 py-2 text-sm font-medium transition-colors";
   const activeNavButtonClasses = "bg-neutral-800";
@@ -136,7 +131,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, query, setQuery
           {/* Mobile search */}
           <div className="relative flex items-center sm:hidden flex-1 max-w-[200px]">
             <input
-              value={searchInput}
+              value={query}
               onChange={(e) => handleInputChange(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder={t('search')}
@@ -215,7 +210,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, query, setQuery
           <div className="relative hidden items-center sm:flex">
             <input
               ref={searchInputRef}
-              value={searchInput}
+              value={query}
               onChange={(e) => handleInputChange(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder={t('search')}

@@ -7,8 +7,8 @@ import {
   getMinutes,
   calculateSearchRelevance,
   normalizeText,
-  smartSearchMatch,
 } from './AppHelpers';
+import { smartVideoSearch } from '../utils/smartVideoSearch';
 
 export function useAppState() {
   // Translation function using DICTIONARY_ENG
@@ -177,15 +177,9 @@ export function useAppState() {
         return true;
       });
     }
-    // Search filter
+    // Smart search filter
     if (activeSearchQuery.trim()) {
-      const searchTerm = normalizeText(activeSearchQuery);
-      result = result.filter(v => smartSearchMatch(v.title, searchTerm));
-      // Sort by relevance
-      result = result
-        .map(v => ({ ...v, relevance: calculateSearchRelevance(v.title, searchTerm) }))
-        .sort((a, b) => b.relevance - a.relevance)
-        .map(({ relevance, ...v }) => v);
+      result = smartVideoSearch(result, activeSearchQuery);
     }
     return result;
   }, [videos, activeSearchQuery, activeCat, durationFilter]);

@@ -1,31 +1,7 @@
 # Robots.txt for https://yoursite.com
-# Generated on: 2025-11-06T04:08:05.428Z
-# Environment: production
+# Generated on: 2025-11-06T04:18:43.345Z
+# Environment: development
 
-# Google Bot
-User-agent: Googlebot
-Allow: /
-Allow: /videos/
-Allow: /categories/
-Disallow: /admin/
-Disallow: /api/
-Disallow: /user/
-Crawl-delay: 1
-
-# Bing Bot
-User-agent: Bingbot
-Allow: /
-Allow: /videos/
-Allow: /categories/
-Disallow: /admin/
-Disallow: /api/
-Disallow: /user/
-Crawl-delay: 2
-
-# Block all other bots
+# Development/Staging - Block all crawlers
 User-agent: *
 Disallow: /
-
-# Sitemaps
-Sitemap: https://yoursite.com/sitemap.xml
-Sitemap: https://yoursite.com/sitemap-videos.xml

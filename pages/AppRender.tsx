@@ -97,7 +97,7 @@ export function AppMainRender(props: any) {
         onViewChange={onViewChange}
         basketItemCount={basketItems.length}
         onToggleBasket={toggleBasketModal}
-        onSearch={setActiveSearchQuery}
+    onSearch={rest.handleSearch}
         t={t}
       />
       {/* Main content wrapper - flex-grow pushes footer to bottom */}
@@ -214,11 +214,11 @@ export function AppMainRender(props: any) {
                     <div className="mb-4 flex items-center justify-between gap-4">
                       <div className="flex items-center gap-3">
                         <h2 className="text-lg font-semibold">
-                          {activeSearchQuery ? `Resultados para "${activeSearchQuery}"` : 'Videos por categoría'}
+                          {activeSearchQuery ? `Results for "${activeSearchQuery}"` : 'Videos by category'}
                         </h2>
                         {activeSearchQuery && (
                           <button onClick={() => { setActiveSearchQuery(''); setQuery(''); setSearchType(null); }} className="px-3 py-1 text-xs rounded-md border border-red-500 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-all duration-300" style={{ boxShadow: '0 0 5px rgba(239, 68, 68, 0.3)' }}>
-                            Limpiar búsqueda
+                            Clear search
                           </button>
                         )}
                       </div>
@@ -261,14 +261,14 @@ export function AppMainRender(props: any) {
                       <div className="text-center text-neutral-500 py-12">
                         {activeSearchQuery ? (
                           <div className="space-y-4">
-                            <p className="text-lg">No se encontraron resultados para "{activeSearchQuery}"</p>
-                            <p className="text-sm">Intenta con otros términos de búsqueda o explora nuestras categorías.</p>
+                            <p className="text-lg">No results found for "{activeSearchQuery}"</p>
+                            <p className="text-sm">Try other search terms or explore our categories.</p>
                             <button onClick={() => { setActiveSearchQuery(''); setQuery(''); setSearchType(null); }} className="px-4 py-2 text-sm rounded-md border border-purple-500 text-purple-400 hover:bg-purple-500/20 hover:text-purple-300 transition-all duration-300" style={{ boxShadow: '0 0 5px rgba(147, 51, 234, 0.3)' }}>
-                              Ver todos los videos
+                              See all videos
                             </button>
                           </div>
                         ) : (
-                          'No hay videos para mostrar.'
+                          'No videos to display.'
                         )}
                       </div>
                     )}
