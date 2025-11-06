@@ -294,9 +294,9 @@ export const fetchDiverseVideosForHome = async (): Promise<{
     try {
         // Usar las categorías que sabemos que tienen contenido en el backend
         const availableCategories = [
-            "/c/Oiled-22",
+            "/c/Fucked_Up_Family-81",
             "/c/Gapes-167", 
-            "/c/AI-239",
+            "/?k=casting&top",
             "/c/Asian_Woman-32"
         ];
         
