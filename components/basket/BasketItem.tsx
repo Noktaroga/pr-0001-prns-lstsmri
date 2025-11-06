@@ -81,6 +81,7 @@ const TrashIcon: React.FC = () => (
 
 export const BasketItem: React.FC<BasketItemProps> = ({ video, isAutoplayEnabled, onRemove, onSelect }) => {
     const { id, title, duration, rating, comments, views, sources } = video;
+    const safeRating = typeof rating === 'number' ? rating : (parseFloat(rating) || 0);
     const [isHovering, setIsHovering] = useState(false);
     const [currentPreviewIndex, setCurrentPreviewIndex] = useState(0);
 
@@ -134,8 +135,8 @@ export const BasketItem: React.FC<BasketItemProps> = ({ video, isAutoplayEnabled
                     </h3>
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-neutral-500 dark:text-neutral-400">
                         <div className="flex items-center gap-1">
-                            <StarIcon filled={rating > 0} />
-                            <span>{rating.toFixed(1)}</span>
+                            <StarIcon filled={safeRating > 0} />
+                            <span>{safeRating.toFixed(1)}</span>
                         </div>
                         <span>{comments} comments</span>
                         <span>{Intl.NumberFormat('en-US', { notation: 'compact' }).format(views)} views</span>

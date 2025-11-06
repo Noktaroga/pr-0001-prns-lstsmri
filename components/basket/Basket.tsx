@@ -22,6 +22,7 @@ export const Basket: React.FC<BasketProps> = ({ isOpen, onClose, basketItems, al
     const [showMultiplayer, setShowMultiplayer] = useState(false);
     const [highlightMultiplayer, setHighlightMultiplayer] = useState(false);
     const [showMultiplayerInfo, setShowMultiplayerInfo] = useState(false);
+    const [multiplayError, setMultiplayError] = useState<string|null>(null);
 
     // Show info popup when event is triggered
     React.useEffect(() => {
@@ -54,7 +55,7 @@ export const Basket: React.FC<BasketProps> = ({ isOpen, onClose, basketItems, al
     }, []);
 
     const basketVideos = useMemo(() => {
-        return basketItems.map(id => allVideos.find(video => video.id === id)).filter(Boolean) as Video[];
+        return basketItems.map(id => allVideos.find(video => String(video.id) === String(id))).filter(Boolean) as Video[];
     }, [basketItems, allVideos]);
 
     const totalPages = Math.ceil(basketVideos.length / PAGE_SIZE);
@@ -63,15 +64,23 @@ export const Basket: React.FC<BasketProps> = ({ isOpen, onClose, basketItems, al
         return basketVideos.slice(startIndex, startIndex + PAGE_SIZE);
     }, [basketVideos, currentPage]);
 
-        if (!isOpen) return null;
-            if (showMultiplayer) {
-                // Pasar los primeros 4 videos seleccionados
-                const selectedVideos = basketItems
-                    .map(id => allVideos.find(v => v.id === id))
-                    .filter(Boolean)
-                    .slice(0, 4) as Video[];
-                return <BasketMultiplayer onClose={() => setShowMultiplayer(false)} videos={selectedVideos} />;
-            }
+    React.useEffect(() => {
+        if (showMultiplayer) {
+            console.log('[Basket] Videos visibles en Multiplay:', paginatedVideos);
+        }
+    }, [showMultiplayer, paginatedVideos]);
+
+    if (!isOpen) return null;
+    // Solo permitir Multiplay si hay exactamente 4 videos visibles en la página actual
+    const canShowMultiplay = paginatedVideos.length === 4;
+    if (showMultiplayer) {
+        if (!canShowMultiplay) {
+            setShowMultiplayer(false);
+            setMultiplayError('Debes tener exactamente 4 videos visibles en la cesta para usar Multiplay.');
+            return null;
+        }
+        return <BasketMultiplayer onClose={() => setShowMultiplayer(false)} videos={paginatedVideos} />;
+    }
 
     return (
         <div 
@@ -106,27 +115,37 @@ export const Basket: React.FC<BasketProps> = ({ isOpen, onClose, basketItems, al
                                                         }}
                                                         aria-label="Clear basket"
                                                     >
-                                                        Vaciar cesta
+                                                        Empty
                                                     </button>
                                                 )}
                                                                         <div className="relative inline-block">
                                                                             <button
-                                                                                onClick={() => setShowMultiplayer(true)}
+                                                                                onClick={() => {
+                                                                                    if (canShowMultiplay) {
+                                                                                        setShowMultiplayer(true);
+                                                                                        setMultiplayError(null);
+                                                                                    } else {
+                                                                                        setMultiplayError('Debes tener exactamente 4 videos visibles en la cesta para usar Multiplay.');
+                                                                                    }
+                                                                                }}
                                                                                 className={
                                                                                     `px-3 py-1 text-xs rounded-md border transition-all duration-300 ` +
-                                                                                    (basketItems.length === 4
+                                                                                    (canShowMultiplay
                                                                                         ? 'border-purple-500 text-purple-400 hover:bg-purple-500/20 hover:text-purple-300 cursor-pointer'
                                                                                         : 'border-neutral-600 text-neutral-500 opacity-50 cursor-not-allowed') +
                                                                                     (highlightMultiplayer ? ' ring-4 ring-yellow-400 ring-offset-2 ring-offset-neutral-950 animate-pulse' : '')
                                                                                 }
                                                                                 style={{
-                                                                                    boxShadow: basketItems.length === 4 ? '0 0 5px rgba(168, 85, 247, 0.3)' : 'none',
+                                                                                    boxShadow: canShowMultiplay ? '0 0 5px rgba(168, 85, 247, 0.3)' : 'none',
                                                                                 }}
                                                                                 aria-label="Abrir modo multiplayer"
-                                                                                disabled={basketItems.length !== 4}
+                                                                                disabled={!canShowMultiplay}
                                                                             >
-                                                                                Multiplayer ({basketItems.length}/4)
+                                                                                Multiplayer ({paginatedVideos.length}/4)
                                                                             </button>
+                {multiplayError && (
+                    <div className="w-full text-center text-xs text-red-400 py-2">{multiplayError}</div>
+                )}
                                                                             {showMultiplayerInfo && (
                                                                                 <div className="absolute left-1/2 z-50 mt-2 w-72 -translate-x-1/2 rounded-xl border border-purple-500 bg-neutral-950 shadow-2xl p-6 animate-fade-in flex flex-col items-center"
                                                                                     style={{

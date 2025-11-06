@@ -758,7 +758,7 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
   
   const [isQualityMenuOpen, setQualityMenuOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const isVideoInBasket = basketItems.includes(id);
+  const isVideoInBasket = basketItems.includes(String(id));
 
   // Effect for saving and loading video progress
   useEffect(() => {
@@ -953,7 +953,7 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
         <div className="lg:col-span-2">
             <div className="group relative aspect-video w-full bg-black rounded-xl overflow-hidden shadow-2xl">
                 {loadingLinks ? (
-                  <div className="flex items-center justify-center h-full">Cargando enlaces de video...</div>
+                  <div className="flex items-center justify-center h-full">Loading...</div>
                 ) : fetchError ? (
                   <div className="flex items-center justify-center h-full text-red-600">{fetchError}</div>
                 ) : videoLinks.length > 0 ? (
@@ -1021,7 +1021,7 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
 
              <div className="mt-6 flex gap-2">
                 <button 
-                  onClick={() => onToggleBasketItem(id)}
+                  onClick={() => onToggleBasketItem(String(id))}
                   className={`flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium transition-colors ${
                     isVideoInBasket 
                       ? 'border-neutral-600 bg-neutral-800' 

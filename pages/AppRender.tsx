@@ -59,7 +59,7 @@ export function AppMainRender(props: any) {
   if (loading && !loadingVideoFromUrl) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-neutral-950 text-neutral-100">
-        <p className="text-lg font-semibold">Cargando contenido…</p>
+        <p className="text-lg font-semibold">Loading…</p>
       </div>
     );
   }
@@ -69,7 +69,7 @@ export function AppMainRender(props: any) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-neutral-950 text-neutral-100">
         <div className="text-center">
-          <p className="text-lg font-semibold mb-2">Cargando video...</p>
+          <p className="text-lg font-semibold mb-2">Loading...</p>
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mx-auto"></div>
         </div>
       </div>
@@ -302,7 +302,12 @@ export function AppMainRender(props: any) {
         isOpen={isBasketOpen}
         onClose={toggleBasketModal}
         basketItems={basketItems}
-        allVideos={videos}
+        allVideos={
+          // Si hay un video seleccionado y su id está en el basket pero no en videos, lo agregamos
+          selectedVideo && basketItems.includes(String(selectedVideo.id)) && !videos.some(v => String(v.id) === String(selectedVideo.id))
+            ? [...videos, selectedVideo]
+            : videos
+        }
         onToggleBasketItem={toggleBasketItem}
         onVideoSelect={onVideoSelect}
         onClearBasket={() => setBasketItems([])}

@@ -54,7 +54,7 @@ const VideoPlayerMultiplayer: React.FC<{ video: Video }> = ({ video }) => {
         <div className="w-full h-full flex items-center justify-center text-neutral-100 bg-neutral-950">
           <div className="text-center">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-neutral-100 mb-2"></div>
-            <p>Cargando video...</p>
+            <p>Loading...</p>
           </div>
         </div>
       ) : fetchError ? (

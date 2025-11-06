@@ -192,7 +192,7 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick, isInBasket
   
   const handleBasketClick = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent card click
-    onToggleBasketItem(id);
+    onToggleBasketItem(String(id));
   };
   
   const mainThumbnail = video.thumbnail;

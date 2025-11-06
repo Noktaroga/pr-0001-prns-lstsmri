@@ -21,7 +21,7 @@ export function useBasket(videos: Video[] = []) {
 
   // Limpiar basket de IDs huérfanas cuando cambian los videos
   useEffect(() => {
-    setBasketItems(prev => prev.filter(id => videos.some(v => v.id === id)));
+    setBasketItems(prev => prev.filter(id => videos.some(v => String(v.id) === String(id))));
   }, [videos]);
 
   // persistir basket cuando cambie
@@ -31,14 +31,20 @@ export function useBasket(videos: Video[] = []) {
 
   const toggleBasketItem = (videoId: string) => {
     setBasketItems(prev => {
+      console.log('[useBasket] toggleBasketItem called with:', videoId, 'Current basket:', prev);
       if (prev.includes(videoId)) {
-        return prev.filter(id => id !== videoId);
+        const updated = prev.filter(id => id !== videoId);
+        console.log('[useBasket] Removed video:', videoId, 'New basket:', updated);
+        return updated;
       } else {
         if (prev.length >= 4) {
           setBasketFullPopup(true);
+          console.log('[useBasket] Basket full, cannot add:', videoId);
           return prev;
         }
-        return [...prev, videoId];
+        const updated = [...prev, videoId];
+        console.log('[useBasket] Added video:', videoId, 'New basket:', updated);
+        return updated;
       }
     });
   };
