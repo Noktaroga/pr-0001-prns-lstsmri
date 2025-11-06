@@ -9,8 +9,8 @@ function formatShortCount(n: number): string {
 }
 
 import React, { useState, useEffect, useRef } from 'react';
-import DICTIONARY_ENG from '../dictionaries/dictionary-eng';
-import { Video } from '../types';
+import DICTIONARY_ENG from '../../dictionaries/dictionary-eng';
+import { Video } from '../../types';
 
 // Custom hook to detect if an element is in the viewport
 const useInView = (options: IntersectionObserverInit = {}) => {

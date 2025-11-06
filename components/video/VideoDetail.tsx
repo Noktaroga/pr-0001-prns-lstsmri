@@ -1,4 +1,4 @@
-import DICTIONARY_ENG from '../dictionaries/dictionary-eng';
+import DICTIONARY_ENG from '../../dictionaries/dictionary-eng';
 // Formatea el número de forma escalable para valores grandes
 function formatShortCount(n: number): string {
     if (n < 50) return "-50";
@@ -115,11 +115,12 @@ function generateSeoMetadata(video: Video) {
     };
 }
 import React, { useState, useRef, useEffect, useMemo } from 'react';
+import Hls from 'hls.js';
 import { createPortal } from 'react-dom';
-import { Video } from '../types';
-import { AdSlot } from './AdSlot';
+import { Video } from '../../types';
+import { AdSlot } from '../ads/AdSlot';
 import { VideoCarousel } from './VideoCarousel';
-import { trackAdClick } from '../utils/analytics';
+import { trackAdClick } from '../../utils/analytics';
 
 interface Comment {
     id: number;
@@ -208,11 +209,15 @@ const initialComments: Comment[] = [
 ];
 
 export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, relatedVideos, onVideoSelect, basketItems, onToggleBasketItem, onCategorySelect }) => {
+  console.log('VideoDetail video prop:', video);
   // Asegura que sources siempre sea un array
   const { id, title, category, rating, total_votes, good_votes, bad_votes, duration } = video;
-  const sources = Array.isArray(video.sources) && video.sources.length > 0 ? video.sources : [{ quality: 'default', url: '' }];
+  const sources = Array.isArray(video.sources) && video.sources.length > 0
+    ? video.sources
+    : [{ quality: 'default', url: video.page_url || video.url || '' }];
   
   useEffect(() => {
+  console.log('[VideoDetail] useEffect para fetchLinks ejecutado, id:', id, 'page_url:', video.page_url);
     const scriptId = 'adManager-script';
     if (!document.getElementById(scriptId)) {
       const script = document.createElement('script');
@@ -340,12 +345,14 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
   const [loadingLinks, setLoadingLinks] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
   useEffect(() => {
+    // Este log confirma que el efecto se ejecuta al montar el componente
+    console.log('[VideoDetail] useEffect de fetchLinks montado. video:', video);
     const fetchLinks = async () => {
       setLoadingLinks(true);
       setFetchError(null);
       try {
-        // Usa video.page_url si existe, si no, usa video.url
         const pageUrl = video.page_url || video.url;
+        console.log('[VideoDetail] Iniciando fetch a /api/selenium-scrape con pageUrl:', pageUrl);
         if (!pageUrl) {
           setFetchError('No page URL provided');
           setLoadingLinks(false);
@@ -356,22 +363,31 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ page_url: pageUrl })
         });
-        if (!response.ok) throw new Error('Error en la petición');
+        console.log('[VideoDetail] Respuesta HTTP:', response.status, response.statusText);
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('[VideoDetail] Error en la petición /api/selenium-scrape:', errorText);
+          throw new Error('Error en la petición: ' + errorText);
+        }
         const data = await response.json();
+        console.log('[VideoDetail] Respuesta de /api/selenium-scrape:', data);
         if (Array.isArray(data.video_links)) {
           setVideoLinks(data.video_links);
           console.log('[VideoDetail] video_links recibidos:', data.video_links);
         } else {
           setFetchError('Respuesta inesperada del backend');
+          console.error('[VideoDetail] Respuesta inesperada del backend:', data);
         }
       } catch (err: any) {
         setFetchError(err.message || 'Error desconocido');
+        console.error('[VideoDetail] Error en fetchLinks:', err);
       } finally {
         setLoadingLinks(false);
+        console.log('[VideoDetail] Estado final de videoLinks:', videoLinks);
       }
     };
     fetchLinks();
-  }, [video.page_url, video.url, id]);
+  }, [video, video.page_url, video.url, id]);
   const [commentsList, setCommentsList] = useState<Comment[]>(initialComments);
   const [newComment, setNewComment] = useState("");
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -895,6 +911,33 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
       </div>
   );
 
+  // Efecto para inicializar hls.js si el enlace es .m3u8
+  useEffect(() => {
+    const videoEl = videoRef.current;
+    const src = videoLinks[videoLinks.length - 1];
+    let hls: Hls | null = null;
+    if (!videoEl || !src) return;
+    if (src.endsWith('.m3u8')) {
+      if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
+        videoEl.src = src;
+      } else if (Hls.isSupported()) {
+        hls = new Hls();
+        hls.loadSource(src);
+        hls.attachMedia(videoEl);
+        hls.on(Hls.Events.ERROR, (event, data) => {
+          console.error('[VideoDetail] hls.js error', event, data);
+        });
+      } else {
+        videoEl.src = '';
+      }
+    }
+    return () => {
+      if (hls) {
+        hls.destroy();
+      }
+    };
+  }, [videoLinks]);
+
   return (
     <main className="mx-auto max-w-7xl pt-6 sm:px-6 lg:px-8">
       <div className="px-4 sm:px-0 mb-6">
@@ -933,8 +976,10 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
                         console.debug('[VideoDetail] <video> onPlay', e, 'src:', videoLinks[videoLinks.length - 1]);
                       }}
                     >
-                      {/* Usar el último enlace como fuente principal */}
-                      <source src={videoLinks[1]} type="video/mp4" />
+                      {/* Solo renderizar <source> si NO es .m3u8 */}
+                      {videoLinks[videoLinks.length - 1] && !videoLinks[videoLinks.length - 1].endsWith('.m3u8') && (
+                        <source src={videoLinks[videoLinks.length - 1]} type="video/mp4" />
+                      )}
                       Your browser does not support the video tag.
                     </video>
                   </div>

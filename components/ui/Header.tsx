@@ -1,5 +1,5 @@
 import React from 'react';
-import { trackSearch } from '../utils/analytics';
+import { trackSearch } from '../../utils/analytics';
 
 interface HeaderProps {
   onToggleSidebar: () => void;

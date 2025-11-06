@@ -1,11 +1,11 @@
 
 import React, { useEffect, useState } from 'react';
-import { Video } from '../types';
-import { HeroSlider } from './HeroSlider';
-import { VideoCarousel } from './VideoCarousel';
-import JuicyAdsHorizontal from './JuicyAdsHorizontal';
-import { CATEGORY_LIST, fetchDiverseVideosForHome } from '../constants';
-import { VideoCardSkeleton } from './VideoCardSkeleton';
+import { Video } from '../../types';
+import JuicyAdsHorizontal from '../ads/JuicyAdsHorizontal';
+import { CATEGORY_LIST, fetchDiverseVideosForHome } from '../../constants';
+import { HeroSlider } from '../video/HeroSlider';
+import { VideoCarousel } from '../video/VideoCarousel';
+import { VideoCardSkeleton } from '../video/VideoCardSkeleton';
 
 interface HomeProps {
     videos: Video[]; // Mantenemos esta prop pero la usaremos como fallback

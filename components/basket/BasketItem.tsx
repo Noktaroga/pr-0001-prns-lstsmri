@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Video } from '../types';
+import { Video } from '../../types';
 
 // Reusing hooks from VideoCard.tsx
 const useInView = (options: IntersectionObserverInit = {}) => {

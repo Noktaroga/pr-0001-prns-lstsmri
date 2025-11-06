@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import { Video } from '../types';
+import { Video } from '../../types';
 import { BasketItem } from './BasketItem';
 import { BasketMultiplayer } from './BasketMultiplayer';
 

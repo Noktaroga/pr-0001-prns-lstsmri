@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { Video } from '../types';
+import { Video } from '../../types';
 import { VideoCard } from './VideoCard';
 
 interface VirtualizedVideoGridProps {

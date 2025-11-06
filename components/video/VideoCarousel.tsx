@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Video } from '../types';
+import { Video } from '../../types';
 import { VideoCard } from './VideoCard';
 
 const ChevronLeftIcon = () => (
