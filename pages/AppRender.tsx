@@ -57,7 +57,8 @@ export function AppMainRender(props: any) {
   } = props;
 
   // Estado de carga inicial o error de la API
-  if (loading && !loadingVideoFromUrl) {
+  // Solo mostrar loading global si NO estamos en la home
+  if (loading && !loadingVideoFromUrl && activeView !== 'home') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-neutral-950 text-neutral-100">
         <p className="text-lg font-semibold">Loading…</p>

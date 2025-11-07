@@ -221,84 +221,75 @@ export const Home: React.FC<HomeProps> = ({ videos: fallbackVideos, onVideoSelec
 
     return (
         <main className="pt-6 pb-0">
-            
-            {loading ? (
-                // Mostrar skeletons mientras carga
-                <div className="space-y-8">
-                    {/* Hero Slider Skeleton */}
-                    <div className="h-64 md:h-80 lg:h-96 bg-neutral-800 rounded-xl animate-pulse"></div>
-                    
-                    {/* Most Viewed Skeleton */}
-                    <div className="space-y-4">
-                        <div className="h-6 bg-neutral-800 rounded w-32 mx-4 sm:mx-6 lg:mx-8 animate-pulse"></div>
-                        <div className="flex gap-4 px-4 sm:px-6 lg:px-8 overflow-hidden">
-                            {Array.from({ length: 6 }).map((_, i) => (
-                                <div key={i} className="w-60 sm:w-64 md:w-72 flex-shrink-0">
-                                    <VideoCardSkeleton />
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                    
-                    {/* Recommended Skeleton */}
-                    <div className="space-y-4">
-                        <div className="h-6 bg-neutral-800 rounded w-36 mx-4 sm:mx-6 lg:mx-8 animate-pulse"></div>
-                        <div className="flex gap-4 px-4 sm:px-6 lg:px-8 overflow-hidden">
-                            {Array.from({ length: 6 }).map((_, i) => (
-                                <div key={i} className="w-60 sm:w-64 md:w-72 flex-shrink-0">
-                                    <VideoCardSkeleton />
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
+            {/* Aquí puedes renderizar el menú y otros módulos fijos que quieras mostrar siempre */}
+            {/* Por ejemplo, podrías tener un componente <MainMenu /> aquí */}
+
+            {/* Hero Slider o su skeleton */}
+            {heroVideos.length > 0 ? (
+                <HeroSlider 
+                    videos={heroVideos} 
+                    onVideoSelect={onVideoSelect} 
+                    basketItems={basketItems}
+                    onToggleBasketItem={onToggleBasketItem}
+                    onCategorySelect={onCategorySelect}
+                />
             ) : (
-                // Contenido normal una vez cargado
-                <div className={refreshing ? 'opacity-75 transition-opacity duration-300' : ''}>
-                    {heroVideos.length > 0 && 
-                        <HeroSlider 
-                            videos={heroVideos} 
-                            onVideoSelect={onVideoSelect} 
-                            basketItems={basketItems}
-                            onToggleBasketItem={onToggleBasketItem}
-                            onCategorySelect={onCategorySelect}
-                        />
-                    }
-                    
-                    {/* Script de anuncio después del Hero Slider */}
-                    <div 
-                        dangerouslySetInnerHTML={{
-                            __html: `
-                                <script>
-                                (function(rnnxip){
-                                var d = document,
-                                    s = d.createElement('script'),
-                                    l = d.scripts[d.scripts.length - 1];
-                                s.settings = rnnxip || {};
-                                s.src = "//understatednurse.com/cODh9U6.bP2j5YlKShWAQi9kNYjnYJ5uN_DyYkznMDyu0t2eNljCkt0eNbj/MD0Q";
-                                s.async = true;
-                                s.referrerPolicy = 'no-referrer-when-downgrade';
-                                l.parentNode.insertBefore(s, l);
-                                })({})
-                                </script>
-                            `
-                        }}
-                    />
-                    
-                    <VideoCarousel 
-                        title="Most viewed" 
-                        videos={mostViewedVideos} 
-                        onVideoSelect={onVideoSelect} 
-                        basketItems={basketItems}
-                        onToggleBasketItem={onToggleBasketItem}
-                    />
-                    <VideoCarousel 
-                        title="Recommended" 
-                        videos={recommendedVideos} 
-                        onVideoSelect={onVideoSelect} 
-                        basketItems={basketItems}
-                        onToggleBasketItem={onToggleBasketItem}
-                    />
+                <div className="h-64 md:h-80 lg:h-96 bg-neutral-800 rounded-xl animate-pulse mb-8" />
+            )}
+
+            {/* Script de anuncio después del Hero Slider */}
+            <div 
+                dangerouslySetInnerHTML={{
+                    __html: `
+                        <script>
+                        (function(rnnxip){
+                        var d = document,
+                            s = d.createElement('script'),
+                            l = d.scripts[d.scripts.length - 1];
+                        s.settings = rnnxip || {};
+                        s.src = "//understatednurse.com/cODh9U6.bP2j5YlKShWAQi9kNYjnYJ5uN_DyYkznMDyu0t2eNljCkt0eNbj/MD0Q";
+                        s.async = true;
+                        s.referrerPolicy = 'no-referrer-when-downgrade';
+                        l.parentNode.insertBefore(s, l);
+                        })({})
+                        </script>
+                    `
+                }}
+            />
+
+            {/* Most Viewed Carousel o su skeleton */}
+            <VideoCarousel 
+                title="Most viewed" 
+                videos={mostViewedVideos} 
+                onVideoSelect={onVideoSelect} 
+                basketItems={basketItems}
+                onToggleBasketItem={onToggleBasketItem}
+            />
+            {mostViewedVideos.length === 0 && (
+                <div className="flex gap-4 px-4 sm:px-6 lg:px-8 overflow-hidden mb-8">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                        <div key={i} className="w-60 sm:w-64 md:w-72 flex-shrink-0">
+                            <VideoCardSkeleton />
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* Recommended Carousel o su skeleton */}
+            <VideoCarousel 
+                title="Recommended" 
+                videos={recommendedVideos} 
+                onVideoSelect={onVideoSelect} 
+                basketItems={basketItems}
+                onToggleBasketItem={onToggleBasketItem}
+            />
+            {recommendedVideos.length === 0 && (
+                <div className="flex gap-4 px-4 sm:px-6 lg:px-8 overflow-hidden">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                        <div key={i} className="w-60 sm:w-64 md:w-72 flex-shrink-0">
+                            <VideoCardSkeleton />
+                        </div>
+                    ))}
                 </div>
             )}
         </main>

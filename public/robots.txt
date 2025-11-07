@@ -1,5 +1,5 @@
 # Robots.txt for https://yoursite.com
-# Generated on: 2025-11-07T03:43:19.907Z
+# Generated on: 2025-11-07T20:31:46.700Z
 # Environment: development
 
 # Development/Staging - Block all crawlers

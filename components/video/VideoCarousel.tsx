@@ -99,7 +99,7 @@ export const VideoCarousel: React.FC<VideoCarouselProps> = ({ title, videos, onV
                 >
                     <div className="flex gap-4 px-4 sm:px-6 lg:px-8">
                         {filteredVideos.map((video, idx) => (
-                            <div key={video.id + '-' + (video.page_url || idx)} className="w-60 sm:w-64 md:w-72 flex-shrink-0">
+                            <div key={`${video.id}-${video.page_url}-${idx}`} className="w-60 sm:w-64 md:w-72 flex-shrink-0">
                                 <VideoCard 
                                     video={video} 
                                     onClick={() => onVideoSelect(video)} 

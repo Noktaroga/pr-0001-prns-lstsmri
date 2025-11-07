@@ -287,10 +287,15 @@ export const fetchVideosAndCategories = async (): Promise<{
 /**
  * Obtiene videos diversos de múltiples categorías para la página Home
  */
+// --- Simple in-memory cache to avoid duplicate fetches/logs in session ---
+let diverseVideosCache: { videos: Video[]; categories: Category[] } | null = null;
 export const fetchDiverseVideosForHome = async (): Promise<{
     videos: Video[];
     categories: Category[];
 }> => {
+    if (diverseVideosCache) {
+        return diverseVideosCache;
+    }
     try {
         // Usar las categorías que sabemos que tienen contenido en el backend
         const availableCategories = [
@@ -299,24 +304,19 @@ export const fetchDiverseVideosForHome = async (): Promise<{
             "/?k=casting&top",
             "/c/Asian_Woman-32"
         ];
-        
         const allVideos: Video[] = [];
         const videosPerCategory = 20; // 20 videos por categoría = 80 total
-        
         // Obtener videos de cada categoría específica
         for (const category of availableCategories) {
             try {
                 const res = await fetch(`/api/videos?category=${encodeURIComponent(category)}&page=1&size=${videosPerCategory}`);
-                
                 if (res.ok) {
                     const data = await res.json();
                     const categoryVideos = data.videos || [];
-                    
                     if (categoryVideos.length > 0) {
                         const transformedVideos = categoryVideos
                             .map(transformRawVideoToVideo)
                             .filter(Boolean); // Filtrar nulls
-                        
                         allVideos.push(...transformedVideos);
                     }
                 }
@@ -324,21 +324,17 @@ export const fetchDiverseVideosForHome = async (): Promise<{
                 console.warn(`Error obteniendo categoría ${category}:`, error);
             }
         }
-        
         // Verificar que tenemos diversidad
         const categoriesFound = [...new Set(allVideos.map(v => v.category))];
         console.log(`Categorías obtenidas: ${categoriesFound.length} (${categoriesFound.map(c => CATEGORY_LABELS[c] || c).join(', ')})`);
-        
         // Mezclar todos los videos para distribución aleatoria
         const shuffledVideos = allVideos.sort(() => Math.random() - 0.5);
-        
         const categoriesList = buildCategoriesFromFixedList();
-        
-        return {
+        diverseVideosCache = {
             videos: shuffledVideos,
             categories: categoriesList
         };
-        
+        return diverseVideosCache;
     } catch (error) {
         console.error('Error en fetchDiverseVideosForHome:', error);
         throw error;
