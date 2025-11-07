@@ -120,6 +120,7 @@ import Hls from 'hls.js';
 import { createPortal } from 'react-dom';
 import { Video } from '../../types';
 import { AdSlot } from '../ads/AdSlot';
+import Clickadilla from '../ads/Clickadilla';
 import { VideoCarousel } from './VideoCarousel';
 import { trackAdClick } from '../../utils/analytics';
 
@@ -939,6 +940,30 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
     };
   }, [videoLinks]);
 
+  useEffect(() => {
+  const container = document.getElementById('ad-below-basket');
+  if (container) {
+    while (container.firstChild) container.removeChild(container.firstChild);
+
+    // Script de configuración del ad
+    const optionsScript = document.createElement('script');
+    optionsScript.type = 'text/javascript';
+    optionsScript.text = `atOptions = { 'key': '563dad183dda887ca6259642daaedbb9', 'format': 'iframe', 'height': 300, 'width': 160, 'params': {} };`;
+    container.appendChild(optionsScript);
+
+    // Script del proveedor
+    const invokeScript = document.createElement('script');
+    invokeScript.type = 'text/javascript';
+    invokeScript.src = '//www.highperformanceformat.com/563dad183dda887ca6259642daaedbb9/invoke.js';
+    invokeScript.async = true;
+    container.appendChild(invokeScript);
+  }
+  return () => {
+    const container = document.getElementById('ad-below-basket');
+    if (container) while (container.firstChild) container.removeChild(container.firstChild);
+  };
+}, [id]);
+
   return (
     <main className="mx-auto max-w-7xl pt-6 sm:px-6 lg:px-8">
       <div className="px-4 sm:px-0 mb-6">
@@ -1035,9 +1060,6 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
                   <span>{isVideoInBasket ? 'In Basket' : 'Add to Basket'}</span>
                 </button>
              </div>
-                         {/* Ad space below Like/Add to Basket - removed */}
-
-         {/* Vertical ad removed as requested */}
         </div>
       </div>
 
@@ -1045,10 +1067,18 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
       
 
     {/* Horizontal ad above related videos - removed */}
-    <div className="mt-8 px-4 sm:px-0">
-      {/* Ad space removed */}
-    </div>
 
+    <div
+      id="ad-below-basket"
+      style={{
+        justifyContent: 'center',
+        alignItems: 'center',
+      }}
+      className="w-full flex justify-center items-center my-6"
+    >
+      {/* El ad se inyecta aquí por useEffect */}
+      <Clickadilla />
+    </div>
     {validRelated.length > 0 && (
       <div className="mt-8 border-t border-neutral-800 pt-6">
         <VideoCarousel 

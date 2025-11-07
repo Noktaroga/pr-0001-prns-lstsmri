@@ -9,6 +9,7 @@ import { Pagination } from '../components/ui/Pagination';
 import { VideoCardSkeleton } from '../components/video/VideoCardSkeleton';
 import { VirtualizedVideoGrid } from '../components/video/VirtualizedVideoGrid';
 import { BlackAdPlaceholderLarge, BlackAdPlaceholderSquare } from './AppAds';
+import { AdsTerraOverlay } from '../components/ads/AdsTerra';
 
 export function AppMainRender(props: any) {
   const {
@@ -272,13 +273,11 @@ export function AppMainRender(props: any) {
                   </section>
                   <div className="hidden xl:flex xl:col-span-2" style={{ marginLeft: '8px', marginRight: '8px' }}>
                     <div style={{ position: 'sticky', top: 32, zIndex: 10, display: 'flex', flexDirection: 'column', gap: 24 }}>
-                      {/* BlackAdPlaceholder from original App.tsx, can be added if needed */}
-                      <BlackAdPlaceholderLarge />
-                      <BlackAdPlaceholderSquare />
+                      <AdsTerraOverlay/>
                     </div>
                   </div>
                   <div className="flex xl:hidden w-full justify-center my-4">
-                    <BlackAdPlaceholderLarge />
+                    {/* Ads removidos para mobile */}
                   </div>
                 </main>
                 <button onClick={() => setShowSidebar((s: boolean) => !s)} className="fixed bottom-8 right-8 inline-flex items-center gap-3 rounded-full border-2 border-pink-500 bg-black px-6 py-4 text-lg shadow-2xl xl:hidden neon-filters-btn" aria-label="Toggle filters" style={{ boxShadow: '0 0 24px #ff2d55, 0 0 48px #a259ff', textShadow: '0 0 8px #ff2d55, 0 0 16px #a259ff', color: '#ff2d55', fontWeight: 'bold', letterSpacing: '0.05em' }}>
