@@ -939,6 +939,74 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
     };
   }, [videoLinks]);
 
+  // Effect para inyectar el script del ad en el contenedor ad-higherperformance
+useEffect(() => {
+  const container = document.getElementById('ad-higherperformance');
+  if (container) {
+    while (container.firstChild) container.removeChild(container.firstChild);
+    // Script que define atOptions
+    const optionsScript = document.createElement('script');
+    optionsScript.type = 'text/javascript';
+    optionsScript.text = `atOptions = {\n  'key' : '6c602961d3172a7e220adf64b7817d79',\n  'format' : 'iframe',\n  'height' : 300,\n  'width' : 160,\n  'params' : {}\n};`;
+    container.appendChild(optionsScript);
+    // Script que invoca el ad
+    const invokeScript = document.createElement('script');
+    invokeScript.type = 'text/javascript';
+    invokeScript.src = '//www.highperformanceformat.com/6c602961d3172a7e220adf64b7817d79/invoke.js';
+    invokeScript.async = true;
+    container.appendChild(invokeScript);
+  }
+  return () => {
+    const container = document.getElementById('ad-higherperformance');
+    if (container) while (container.firstChild) container.removeChild(container.firstChild);
+  };
+}, [id]);
+
+// Effect para inyectar el script del ad en el segundo contenedor ad-higherperformance-2
+// Effect para inyectar el banner ad encima de los recommended videos
+useEffect(() => {
+  const container = document.getElementById('ad-banner-recommended');
+  if (container) {
+    while (container.firstChild) container.removeChild(container.firstChild);
+    // Script de configuración
+    const optionsScript = document.createElement('script');
+    optionsScript.type = 'text/javascript';
+    optionsScript.text = `atOptions = {\n  'key' : '563dad183dda887ca6259642daaedbb9',\n  'format' : 'iframe',\n  'height' : 90,\n  'width' : 728,\n  'params' : {}\n};`;
+    container.appendChild(optionsScript);
+    // Script del proveedor
+    const invokeScript = document.createElement('script');
+    invokeScript.type = 'text/javascript';
+    invokeScript.src = '//www.highperformanceformat.com/563dad183dda887ca6259642daaedbb9/invoke.js';
+    invokeScript.async = true;
+    container.appendChild(invokeScript);
+  }
+  return () => {
+    const container = document.getElementById('ad-banner-recommended');
+    if (container) while (container.firstChild) container.removeChild(container.firstChild);
+  };
+}, [id]);
+useEffect(() => {
+  const container2 = document.getElementById('ad-higherperformance-2');
+  if (container2) {
+    while (container2.firstChild) container2.removeChild(container2.firstChild);
+    // Script que define atOptions
+    const optionsScript2 = document.createElement('script');
+    optionsScript2.type = 'text/javascript';
+    optionsScript2.text = `atOptions = {\n  'key' : '6c602961d3172a7e220adf64b7817d79',\n  'format' : 'iframe',\n  'height' : 300,\n  'width' : 160,\n  'params' : {}\n};`;
+    container2.appendChild(optionsScript2);
+    // Script que invoca el ad
+    const invokeScript2 = document.createElement('script');
+    invokeScript2.type = 'text/javascript';
+    invokeScript2.src = '//www.highperformanceformat.com/6c602961d3172a7e220adf64b7817d79/invoke.js';
+    invokeScript2.async = true;
+    container2.appendChild(invokeScript2);
+  }
+  return () => {
+    const container2 = document.getElementById('ad-higherperformance-2');
+    if (container2) while (container2.firstChild) container2.removeChild(container2.firstChild);
+  };
+}, [id]);
+
   return (
     <main className="mx-auto max-w-7xl pt-6 sm:px-6 lg:px-8">
       <div className="px-4 sm:px-0 mb-6">
@@ -949,100 +1017,111 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
           &larr; Back to videos
         </button>
       </div>
-
+  
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 px-4 sm:px-0">
         <div className="lg:col-span-2">
-            <div className="group relative aspect-video w-full bg-black rounded-xl overflow-hidden shadow-2xl">
-                {loadingLinks ? (
-                  <div className="flex items-center justify-center h-full">Loading...</div>
-                ) : fetchError ? (
-                  <div className="flex items-center justify-center h-full text-red-600">{fetchError}</div>
-                ) : videoLinks.length > 0 ? (
-                  <div className="relative w-full h-full">
-                    <video
-                      id="main-video"
-                      ref={videoRef}
-                      key={videoLinks[videoLinks.length - 1] || 'no-link'}
-                      controls
-                      className="h-full w-full object-contain"
-                      {...(video.thumbnail ? { poster: video.thumbnail } : {})}
-                      crossOrigin="anonymous"
-                      onError={e => {
-                        console.error('[VideoDetail] <video> onError', e, 'src:', videoLinks[videoLinks.length - 1]);
-                      }}
-                      onLoadedData={e => {
-                        console.debug('[VideoDetail] <video> onLoadedData', e, 'src:', videoLinks[videoLinks.length - 1]);
-                      }}
-                      onPlay={e => {
-                        console.debug('[VideoDetail] <video> onPlay', e, 'src:', videoLinks[videoLinks.length - 1]);
-                      }}
-                    >
-                      {/* Solo renderizar <source> si NO es .m3u8 */}
-                      {videoLinks[videoLinks.length - 1] && !videoLinks[videoLinks.length - 1].endsWith('.m3u8') && (
-                        <source src={videoLinks[videoLinks.length - 1]} type="video/mp4" />
-                      )}
-                      Your browser does not support the video tag.
-                    </video>
-                    <VideoAdManager />
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center h-full">No se encontraron enlaces de video.</div>
-                )}
-            </div>
-        </div>
-
-        <div className="lg:col-span-1">
-                 <button 
-                     onClick={() => onCategorySelect(category)}
-                     className="inline-block bg-neutral-800 text-neutral-200 rounded-full px-3 py-1 text-xs font-semibold mb-3 hover:bg-neutral-700 transition-colors"
-                 >
-                     {(() => {
-                        // Usar solo diccionario en inglés
-                        let normalizedCategory = category.startsWith('/') ? category : '/' + category;
-                        let mapped = DICTIONARY_ENG[normalizedCategory]
-                           || DICTIONARY_ENG[normalizedCategory.replace(/\s+/g, '').toLowerCase()]
-                           || DICTIONARY_ENG[category]
-                           || DICTIONARY_ENG[category.replace(/\s+/g, '').toLowerCase()];
-                        return mapped || category;
-                     })()}
-                 </button>
-             <h1 className="text-2xl lg:text-3xl font-bold tracking-tight mb-4">{title}</h1>
-
-             <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-neutral-400 mb-6 border-y border-neutral-800 py-4">
-                <div className="flex items-center gap-2" title={`Rating: ${rating}`}> 
-                    <StarRating rating={rating} />
-                </div>
-                                <div className="flex items-center gap-2">
-                                    <span title="Votos buenos" className="text-green-600 flex items-center gap-1">👍<span>{formatShortCount(good_votes)}</span></span>
-                                    <span title="Votos malos" className="text-red-600 flex items-center gap-1">👎<span>{formatShortCount(bad_votes)}</span></span>
-                                </div>
-                                {/* visitas eliminadas */}
-             </div>
-
-
-
-             <div className="mt-6 flex gap-2">
-                <button 
-                  onClick={() => onToggleBasketItem(String(id))}
-                  className={`flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium transition-colors ${
-                    isVideoInBasket 
-                      ? 'border-neutral-600 bg-neutral-800' 
-                      : 'border-neutral-700 hover:bg-neutral-800'
-                  }`}
-                  aria-label={isVideoInBasket ? "Remove from basket" : "Add to basket"}
+          <div className="group relative aspect-video w-full bg-black rounded-xl overflow-hidden shadow-2xl">
+            {loadingLinks ? (
+              <div className="flex items-center justify-center h-full">Loading...</div>
+            ) : fetchError ? (
+              <div className="flex items-center justify-center h-full text-red-600">{fetchError}</div>
+            ) : videoLinks.length > 0 ? (
+              <div className="relative w-full h-full">
+                <video
+                  id="main-video"
+                  ref={videoRef}
+                  key={videoLinks[videoLinks.length - 1] || 'no-link'}
+                  controls
+                  className="h-full w-full object-contain"
+                  {...(video.thumbnail ? { poster: video.thumbnail } : {})}
+                  crossOrigin="anonymous"
+                  onError={e => {
+                    console.error('[VideoDetail] <video> onError', e, 'src:', videoLinks[videoLinks.length - 1]);
+                  }}
+                  onLoadedData={e => {
+                    console.debug('[VideoDetail] <video> onLoadedData', e, 'src:', videoLinks[videoLinks.length - 1]);
+                  }}
+                  onPlay={e => {
+                    console.debug('[VideoDetail] <video> onPlay', e, 'src:', videoLinks[videoLinks.length - 1]);
+                  }}
                 >
-                  {isVideoInBasket ? <BasketCheckIcon /> : <BasketAddIcon />}
-                  <span>{isVideoInBasket ? 'In Basket' : 'Add to Basket'}</span>
-                </button>
-             </div>
-                         {/* Ad space below Like/Add to Basket - removed */}
-
-         {/* Vertical ad removed as requested */}
+                  {/* Solo renderizar <source> si NO es .m3u8 */}
+                  {videoLinks[videoLinks.length - 1] && !videoLinks[videoLinks.length - 1].endsWith('.m3u8') && (
+                    <source src={videoLinks[videoLinks.length - 1]} type="video/mp4" />
+                  )}
+                  Your browser does not support the video tag.
+                </video>
+                {/* Si usas VideoAdManager para otro ad, déjalo. Si no, elimínalo */}
+                {/* <VideoAdManager /> */}
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-full">No se encontraron enlaces de video.</div>
+            )}
+          </div>
+        </div>
+  
+        <div className="lg:col-span-1">
+          <button 
+            onClick={() => onCategorySelect(category)}
+            className="inline-block bg-neutral-800 text-neutral-200 rounded-full px-3 py-1 text-xs font-semibold mb-3 hover:bg-neutral-700 transition-colors"
+          >
+            {(() => {
+              let normalizedCategory = category.startsWith('/') ? category : '/' + category;
+              let mapped = DICTIONARY_ENG[normalizedCategory]
+                || DICTIONARY_ENG[normalizedCategory.replace(/\s+/g, '').toLowerCase()]
+                || DICTIONARY_ENG[category]
+                || DICTIONARY_ENG[category.replace(/\s+/g, '').toLowerCase()];
+              return mapped || category;
+            })()}
+          </button>
+          <h1 className="text-2xl lg:text-3xl font-bold tracking-tight mb-4">{title}</h1>
+  
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-neutral-400 mb-6 border-y border-neutral-800 py-4">
+            <div className="flex items-center gap-2" title={`Rating: ${rating}`}> 
+              <StarRating rating={rating} />
+            </div>
+            <div className="flex items-center gap-2">
+              <span title="Votos buenos" className="text-green-600 flex items-center gap-1">👍<span>{formatShortCount(good_votes)}</span></span>
+              <span title="Votos malos" className="text-red-600 flex items-center gap-1">👎<span>{formatShortCount(bad_votes)}</span></span>
+            </div>
+          </div>
+  
+          <div className="mt-6 flex gap-2">
+            <button 
+              onClick={() => onToggleBasketItem(String(id))}
+              className={`flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium transition-colors ${
+                isVideoInBasket 
+                  ? 'border-neutral-600 bg-neutral-800' 
+                  : 'border-neutral-700 hover:bg-neutral-800'
+              }`}
+              aria-label={isVideoInBasket ? "Remove from basket" : "Add to basket"}
+            >
+              {isVideoInBasket ? <BasketCheckIcon /> : <BasketAddIcon />}
+              <span>{isVideoInBasket ? 'In Basket' : 'Add to Basket'}</span>
+            </button>
+          </div>
+          {/* Aquí va el contenedor del ad, sin iframe ni script directo */}
+          <div
+            className="ad-higherperformance-pair mt-12 flex flex-row justify-center gap-6"
+            style={{ marginTop: 48 }}
+          >
+            <div
+              className="ad-higherperformance"
+              id="ad-higherperformance"
+              style={{ width: 160, height: 300 }}
+            >
+              {/* El ad se inyecta aquí por useEffect */}
+            </div>
+            <div
+              className="ad-higherperformance"
+              id="ad-higherperformance-2"
+              style={{ width: 160, height: 300 }}
+            >
+              {/* El segundo ad se inyecta aquí por useEffect */}
+            </div>
+          </div>
         </div>
       </div>
-
-
-      
 
     {/* Horizontal ad above related videos - removed */}
     <div className="mt-8 px-4 sm:px-0">
@@ -1050,15 +1129,24 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ video, onBack, related
     </div>
 
     {validRelated.length > 0 && (
-      <div className="mt-8 border-t border-neutral-800 pt-6">
-        <VideoCarousel 
-          title="Related Videos"
-          videos={validRelated}
-          onVideoSelect={onVideoSelect}
-          basketItems={basketItems}
-          onToggleBasketItem={onToggleBasketItem}
-        />
-      </div>
+      <>
+        {/* Banner ad encima de los recommended videos */}
+        <div
+          id="ad-banner-recommended"
+          style={{ width: 728, height: 90, margin: '32px auto 0 auto', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+        >
+          {/* El banner ad se inyecta aquí por useEffect */}
+        </div>
+        <div className="mt-8 border-t border-neutral-800 pt-6">
+          <VideoCarousel 
+            title="Related Videos"
+            videos={validRelated}
+            onVideoSelect={onVideoSelect}
+            basketItems={basketItems}
+            onToggleBasketItem={onToggleBasketItem}
+          />
+        </div>
+      </>
     )}
 
       <div className="px-4 sm:px-0">
