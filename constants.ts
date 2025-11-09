@@ -299,10 +299,11 @@ export const fetchDiverseVideosForHome = async (): Promise<{
     try {
         // Usar las categorías que sabemos que tienen contenido en el backend
         const availableCategories = [
-            "/c/Fucked_Up_Family-81",
-            "/c/Gapes-167", 
-            "/?k=casting&top",
-            "/c/Asian_Woman-32"
+            "/c/Oiled-22",
+            "/c/Asian_Woman-32", 
+            "/c/Gapes-167",
+            "/c/Creampie-40",
+            "/c/Cumshot-18"
         ];
         const allVideos: Video[] = [];
         const videosPerCategory = 20; // 20 videos por categoría = 80 total
